@@ -27,9 +27,9 @@ const MAP: Record<string, React.FC> = {
   cta: S9_CTA,
 };
 
-export const Main: React.FC = () => (
-  <AbsoluteFill style={{ background: theme.bg, fontFamily: body, color: theme.text }}>
-    <Background />
+// The 9 scenes as a reusable band — shared by the Main (16:9) and Social (9:16) cuts.
+export const SceneBand: React.FC = () => (
+  <>
     {SCENES.map((s) => {
       const Comp = MAP[s.id];
       return (
@@ -38,6 +38,13 @@ export const Main: React.FC = () => (
         </Sequence>
       );
     })}
+  </>
+);
+
+export const Main: React.FC = () => (
+  <AbsoluteFill style={{ background: theme.bg, fontFamily: body, color: theme.text }}>
+    <Background />
+    <SceneBand />
     <AudioLayer />
   </AbsoluteFill>
 );

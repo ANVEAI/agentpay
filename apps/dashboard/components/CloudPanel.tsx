@@ -205,9 +205,15 @@ Docs: ${origin}/docs`
                 <td>{p.amount} USDC</td>
                 <td>{p.webhookUrl ? "on" : <span className="muted">—</span>}</td>
                 <td>
-                  <a href={`/pay/${p.id}`} target="_blank" rel="noreferrer">open</a>{" "}
+                  <button
+                    type="button"
+                    className="btn ghost sm"
+                    onClick={() => window.open(`/pay/${p.id}`, "_blank", "noopener")}
+                  >
+                    Preview
+                  </button>{" "}
                   <button type="button" className="btn ghost sm" onClick={() => copy(`${origin}/pay/${p.id}`, `link-${p.id}`)}>
-                    {copied === `link-${p.id}` ? "✓" : "copy"}
+                    {copied === `link-${p.id}` ? "✓" : "Copy link"}
                   </button>
                 </td>
                 <td className="actions">

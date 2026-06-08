@@ -23,9 +23,13 @@ if (
   );
 }
 
+// Persist the signed-in session for 30 days so merchants don't re-sign every visit.
+const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
+
 export const sessionOptions: SessionOptions = {
   password: secret || DEFAULT_DEV_SECRET,
   cookieName: "agentpay_siwe",
+  ttl: SESSION_TTL_SECONDS,
   cookieOptions: {
     httpOnly: true,
     sameSite: "lax",

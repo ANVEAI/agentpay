@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
+import { headers } from "next/headers";
+import { cookieToInitialState } from "wagmi";
 import "./globals.css";
 import { Providers } from "./providers";
+import { wagmiConfig } from "@/lib/wagmi";
 
 const sans = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
 const display = Space_Grotesk({
@@ -16,11 +19,13 @@ export const metadata: Metadata = {
   description: "Accept AI-agent payments in USDC. x402-compatible, self-hosted.",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Hydrate wagmi from the connection cookie so the wallet stays connected across reloads.
+  const initialState = cookieToInitialState(wagmiConfig, (await headers()).get("cookie"));
   return (
     <html lang="en" className={`${sans.variable} ${display.variable}`} suppressHydrationWarning>
       <body suppressHydrationWarning>
-        <Providers>{children}</Providers>
+        <Providers initialState={initialState}>{children}</Providers>
       </body>
     </html>
   );

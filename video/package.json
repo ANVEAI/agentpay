@@ -1,0 +1,26 @@
+{
+  "name": "agentpay-video",
+  "private": true,
+  "version": "1.0.0",
+  "description": "AgentPay Product Hunt launch video — Remotion (frame-accurate MP4) + ElevenLabs audio.",
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "audio": "node --env-file=.env scripts/generate-audio.mjs",
+    "render": "remotion render src/index.ts Main out/agentpay-launch.mp4 --codec=h264 --crf=18 --concurrency=4 --jpeg-quality=95",
+    "render:social": "remotion render src/index.ts Social out/agentpay-launch-9x16.mp4 --codec=h264 --crf=18",
+    "render:teaser": "remotion render src/index.ts Teaser out/agentpay-teaser-15s.mp4 --codec=h264 --crf=18"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.474",
+    "@remotion/google-fonts": "^4.0.474",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "remotion": "^4.0.474"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^6.0.3"
+  }
+}

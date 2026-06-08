@@ -1,0 +1,6 @@
+node_modules
+out
+.env
+# Generated audio is gitignored; the committed royalty-free fallback is kept.
+public/audio/*.mp3
+!public/audio/fallback-music.mp3

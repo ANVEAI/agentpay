@@ -1,0 +1,3 @@
+# Isolate this subproject from the parent AgentPay pnpm workspace so Remotion's
+# heavy deps (a bundled Chromium) never touch the monorepo's `pnpm -r` install.
+packages: []

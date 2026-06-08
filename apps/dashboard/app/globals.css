@@ -338,6 +338,23 @@ a:focus-visible {
   outline: none;
   border-color: var(--accent);
 }
+.field {
+  margin: 0 0 10px;
+}
+.field label {
+  display: block;
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+textarea.inp {
+  width: 100%;
+  min-height: 52px;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
 .keybox {
   background: rgba(108, 124, 255, 0.08);
   border: 1px solid rgba(108, 124, 255, 0.3);

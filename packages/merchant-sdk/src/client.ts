@@ -4,6 +4,7 @@ import { baseSepolia as viemBaseSepolia } from "viem/chains";
 import type { Hex, Network, PaymentRequirement } from "./types";
 import { baseSepolia } from "./chains";
 import { paymentMessage, encodeProof } from "./proof";
+import { evaluatePolicy, type SpendPolicy } from "./policy";
 
 export interface AgentWalletOptions {
   /** Agent wallet private key (0x-prefixed). Keep this in env, never in client code. */
@@ -53,6 +54,12 @@ export interface PaidFetchOptions extends AgentWalletOptions {
    * control plane's per-agent spend.)
    */
   dailyLimitUsdc?: number;
+  /**
+   * Spend policy enforced before paying any 402: vendor allow-list, blocked sites,
+   * intent-based per-payment caps, model allow-list. A refused request returns its
+   * unpaid 402 instead of paying.
+   */
+  policy?: SpendPolicy;
 }
 
 /**
@@ -97,6 +104,22 @@ export function createPaidFetch(opts: PaidFetchOptions): typeof fetch {
     const body = await res.clone().json().catch(() => null);
     const requirement = extractPaymentRequirement(body);
     if (!requirement) return res; // unparseable 402 — hand it back untouched
+
+    if (opts.policy) {
+      const amountUsdc = Number(requirement.maxAmountRequired) / 10 ** requirement.assetDecimals;
+      const reqUrl =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.href
+            : (input as Request).url;
+      const decision = evaluatePolicy(opts.policy, {
+        url: reqUrl,
+        payTo: requirement.payTo,
+        amountUsdc,
+      });
+      if (!decision.allow) return res; // policy refused — return the unpaid 402, do not pay
+    }
 
     if (opts.dailyLimitUsdc != null) {
       const today = new Date().toISOString().slice(0, 10);

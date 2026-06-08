@@ -3,5 +3,6 @@ export * from "./chains";
 export * from "./requirement";
 export * from "./verify";
 export * from "./proof";
+export * from "./policy";
 export * from "./store";
 export * from "./gateway";

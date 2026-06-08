@@ -55,6 +55,11 @@
       btn.onclick = function () { self.pay(btn); };
       this.innerHTML = "";
       this.appendChild(btn);
+      var msg = document.createElement("div");
+      msg.style.cssText =
+        "margin-top:8px;font:500 12.5px/1.4 ui-sans-serif,system-ui,-apple-system,sans-serif;color:#ff6b6b;display:none;";
+      this._msg = msg;
+      this.appendChild(msg);
     }
 
     async resolve() {
@@ -81,6 +86,7 @@
     }
 
     async pay(btn) {
+      if (this._msg) { this._msg.style.display = "none"; this._msg.textContent = ""; }
       var eth = window.ethereum;
       if (!eth) { this.fail(new Error("No wallet found. Install MetaMask.")); return; }
       var mode = this.getAttribute("mode") || "payment";
@@ -145,8 +151,10 @@
     }
 
     fail(e) {
+      var text = String((e && e.message) || e);
+      if (this._msg) { this._msg.textContent = text; this._msg.style.display = "block"; }
       this.dispatchEvent(
-        new CustomEvent("agentpay:error", { bubbles: true, detail: { error: String((e && e.message) || e) } }),
+        new CustomEvent("agentpay:error", { bubbles: true, detail: { error: text } }),
       );
       console.error("[agentpay]", e);
     }

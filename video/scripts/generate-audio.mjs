@@ -57,10 +57,10 @@ const frames = (secs) => Math.round(secs * FPS);
 // --- voiceover script, per beat (placement frames mirror src/timeline.ts) ---
 const VO = [
   { file: "vo-01-problem.mp3", fromF: 90, text: "Your AI agents are ready to buy — APIs, data, compute. But every payment hits a wall: manual reviews, shared cards, and you're on the hook for the bill." },
-  { file: "vo-02-solution.mp3", fromF: 300, text: "Meet AgentPay — the drop-in payment rail for AI agents." },
-  { file: "vo-03-howA.mp3", fromF: 450, text: "Gate any route in one line of code. An unpaid request gets a 402; the agent pays in USDC and retries." },
-  { file: "vo-04-howB.mp3", fromF: 750, text: "You stay in control. Set allowed vendors, per-intent caps, and a daily budget — your policy, enforced on every call." },
-  { file: "vo-05-flow.mp3", fromF: 1050, text: "402, pay, 200 — non-custodial, over the open x402 standard, gasless on Base. The money lands straight in your wallet." },
+  { file: "vo-02-solution.mp3", fromF: 410, text: "Meet AgentPay — the drop-in payment rail for AI agents." },
+  { file: "vo-03-howA.mp3", fromF: 560, text: "Gate any route in one line of code. An unpaid request gets a 402; the agent pays in USDC and retries." },
+  { file: "vo-04-howB.mp3", fromF: 840, text: "You stay in control. Set allowed vendors, per-intent caps, and a daily budget — your policy, enforced on every call." },
+  { file: "vo-05-flow.mp3", fromF: 1120, text: "402, pay, 200 — non-custodial, over the open x402 standard, gasless on Base. The money lands straight in your wallet." },
   { file: "vo-06-cta.mp3", fromF: 1650, text: "AgentPay. Stripe for AI agents — open source. Star it on GitHub, and start charging your agents today." },
 ];
 const SFX = [

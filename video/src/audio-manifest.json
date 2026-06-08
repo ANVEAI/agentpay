@@ -1,1 +1,17 @@
-{ "music": null, "vo": [], "sfx": {} }
+{
+  "music": "fallback-music.mp3",
+  "vo": [
+    { "file": "vo-01-problem.mp3", "fromF": 90, "durF": 298 },
+    { "file": "vo-02-solution.mp3", "fromF": 410, "durF": 116 },
+    { "file": "vo-03-howA.mp3", "fromF": 560, "durF": 219 },
+    { "file": "vo-04-howB.mp3", "fromF": 840, "durF": 222 },
+    { "file": "vo-05-flow.mp3", "fromF": 1120, "durF": 293 },
+    { "file": "vo-06-cta.mp3", "fromF": 1650, "durF": 212 }
+  ],
+  "sfx": {
+    "stab": "sfx-synth-stab.mp3",
+    "whoosh": "sfx-whoosh.mp3",
+    "click": "sfx-click.mp3",
+    "chime": "sfx-chime.mp3"
+  }
+}

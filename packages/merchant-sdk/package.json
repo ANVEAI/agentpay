@@ -1,0 +1,85 @@
+{
+  "name": "@agentpay/merchant-sdk",
+  "version": "0.1.0",
+  "description": "x402-compatible SDK to accept AI-agent payments in USDC. Gate any route in one line; settle wallet-to-wallet, non-custodial.",
+  "license": "MIT",
+  "author": "AgentPay",
+  "homepage": "https://github.com/ANVEAI/agentpay#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ANVEAI/agentpay.git",
+    "directory": "packages/merchant-sdk"
+  },
+  "bugs": {
+    "url": "https://github.com/ANVEAI/agentpay/issues"
+  },
+  "keywords": [
+    "x402",
+    "ai-agents",
+    "agent-payments",
+    "agentic-commerce",
+    "usdc",
+    "stablecoin",
+    "payments",
+    "payment-gateway",
+    "web3",
+    "base",
+    "viem",
+    "402"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./express": {
+      "types": "./dist/express.d.ts",
+      "import": "./dist/express.js",
+      "require": "./dist/express.cjs"
+    },
+    "./web": {
+      "types": "./dist/web.d.ts",
+      "import": "./dist/web.js",
+      "require": "./dist/web.cjs"
+    },
+    "./next": {
+      "types": "./dist/next.d.ts",
+      "import": "./dist/next.js",
+      "require": "./dist/next.cjs"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "import": "./dist/client.js",
+      "require": "./dist/client.cjs"
+    }
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "prepublishOnly": "tsup"
+  },
+  "dependencies": {
+    "viem": "^2.21.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.1.0"
+  }
+}

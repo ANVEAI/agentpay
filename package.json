@@ -1,0 +1,19 @@
+{
+  "name": "agentpay",
+  "version": "0.0.1",
+  "private": true,
+  "description": "AgentPay — the easiest way for merchants to accept AI-agent payments. x402-compatible, USDC, self-hosted.",
+  "license": "MIT",
+  "scripts": {
+    "dev": "pnpm --filter @agentpay/dashboard dev",
+    "build": "pnpm -r build",
+    "build:sdk": "pnpm --filter @agentpay/merchant-sdk build",
+    "typecheck": "pnpm -r typecheck",
+    "demo": "node scripts/demo.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "viem": "^2.21.0"
+  },
+  "packageManager": "pnpm@9.15.4"
+}

@@ -355,6 +355,15 @@ textarea.inp {
   font-size: 12.5px;
   line-height: 1.5;
 }
+.rule-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.rule-row .inp {
+  flex: 1;
+  min-width: 0;
+}
 .keybox {
   background: rgba(108, 124, 255, 0.08);
   border: 1px solid rgba(108, 124, 255, 0.3);

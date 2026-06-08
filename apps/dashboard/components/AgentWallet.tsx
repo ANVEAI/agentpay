@@ -7,13 +7,18 @@ import { useEffect, useState } from "react";
 import { USDC_ADDRESS, USDC_DECIMALS } from "@/lib/chains";
 import { short } from "@/lib/format";
 
+interface IntentRow {
+  label: string;
+  host: string;
+  max: string;
+}
 interface SavedAgent {
   address: string;
   dailyLimit: string;
   vendors?: string;
   blocked?: string;
   models?: string;
-  intents?: string;
+  intentRules?: IntentRow[];
 }
 const STORAGE_KEY = "agentpay_agent";
 
@@ -23,20 +28,10 @@ function toList(s?: string): string[] {
     .map((x) => x.trim())
     .filter(Boolean);
 }
-function toIntents(s?: string) {
-  return (s ?? "")
-    .split("\n")
-    .map((line) => {
-      const [label, host, max] = line.split(",").map((x) => x.trim());
-      const maxUsdc = Number(max);
-      return label && host && Number.isFinite(maxUsdc) ? { label, host, maxUsdc } : null;
-    })
-    .filter(Boolean);
-}
 
-// The user (agent-owner) dashboard: pre-authorize an agent to pay in USDC within a budget
-// AND a spend policy (vendor allow-list, blocked sites, intent caps, model allow-list), fund
-// it from MetaMask, and connect it to OpenClaw. Client-side + non-custodial.
+// The user (agent-owner) dashboard: pre-authorize an agent to pay in USDC within a budget AND
+// a spend policy (vendor allow-list, blocked sites, intent caps, model allow-list), fund it from
+// MetaMask, and connect it to OpenClaw. Client-side + non-custodial.
 export function AgentWallet() {
   const { address, isConnected } = useAccount();
   const { connectAsync, connectors, isPending } = useConnect();
@@ -50,7 +45,7 @@ export function AgentWallet() {
   const [vendors, setVendors] = useState("");
   const [blocked, setBlocked] = useState("");
   const [models, setModels] = useState("");
-  const [intents, setIntents] = useState("");
+  const [intentRules, setIntentRules] = useState<IntentRow[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState("");
@@ -66,7 +61,7 @@ export function AgentWallet() {
         setVendors(a.vendors || "");
         setBlocked(a.blocked || "");
         setModels(a.models || "");
-        setIntents(a.intents || "");
+        setIntentRules(a.intentRules || []);
       }
     } catch {
       // ignore unreadable storage
@@ -81,9 +76,7 @@ export function AgentWallet() {
     query: { enabled: !!agent },
   });
 
-  function persistAll() {
-    if (!agent) return;
-    const a: SavedAgent = { ...agent, dailyLimit, vendors, blocked, models, intents };
+  function write(a: SavedAgent) {
     setAgent(a);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(a));
@@ -91,8 +84,12 @@ export function AgentWallet() {
       // ignore
     }
   }
+  function snapshot(addr: string): SavedAgent {
+    return { address: addr, dailyLimit, vendors, blocked, models, intentRules };
+  }
   function save() {
-    persistAll();
+    if (!agent) return;
+    write(snapshot(agent.address));
     setSavedMsg(true);
     setTimeout(() => setSavedMsg(false), 1500);
   }
@@ -100,13 +97,7 @@ export function AgentWallet() {
     const pk = generatePrivateKey();
     const acct = privateKeyToAccount(pk);
     setNewKey(pk);
-    const a: SavedAgent = { address: acct.address, dailyLimit, vendors, blocked, models, intents };
-    setAgent(a);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(a));
-    } catch {
-      // ignore
-    }
+    write(snapshot(acct.address));
   }
   function reset() {
     if (!window.confirm("Forget this agent in this browser? Make sure you saved its key.")) return;
@@ -117,6 +108,15 @@ export function AgentWallet() {
     }
     setAgent(null);
     setNewKey(null);
+  }
+  function addRule() {
+    setIntentRules((r) => [...r, { label: "", host: "", max: "" }]);
+  }
+  function updateRule(i: number, field: keyof IntentRow, value: string) {
+    setIntentRules((r) => r.map((row, j) => (j === i ? { ...row, [field]: value } : row)));
+  }
+  function removeRule(i: number) {
+    setIntentRules((r) => r.filter((_, j) => j !== i));
   }
   async function connect() {
     const connector = connectors[0];
@@ -151,6 +151,15 @@ export function AgentWallet() {
     setCopied(what);
     setTimeout(() => setCopied(""), 1500);
   }
+  function downloadSkill() {
+    const blob = new Blob([skill], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "SKILL.md";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   if (!isConnected) {
     const connector = connectors[0];
@@ -168,25 +177,42 @@ export function AgentWallet() {
     allowedVendors: toList(vendors),
     blockedHosts: toList(blocked),
     allowedModels: toList(models),
-    intents: toIntents(intents),
+    intents: intentRules
+      .map((r) => ({ label: r.label.trim(), host: r.host.trim(), maxUsdc: Number(r.max) }))
+      .filter((r) => r.label && r.host && Number.isFinite(r.maxUsdc)),
   };
 
   const skill = agent
-    ? `# AgentPay — autonomous payments (OpenClaw skill)
-# This agent pays x402-gated APIs in USDC, within a budget AND a spend policy.
+    ? `---
+name: agentpay-payments
+description: Pay x402-gated APIs in USDC autonomously, within a budget and spend policy.
+version: 1.0.0
+metadata:
+  openclaw:
+    requires:
+      env:
+        - AGENT_KEY
+      bins:
+        - node
+    primaryEnv: AGENT_KEY
+---
+# AgentPay — autonomous payments
+
+This agent pays x402-gated APIs in USDC, within a daily budget AND a spend policy
+(allowed vendors, blocked sites, intent caps, model allow-list).
 
 ## Setup
-npm i @agentpay/merchant-sdk
-export AGENT_KEY=<the agent key shown when you created it>   # funded wallet on Base Sepolia
+    npm i @agentpay/merchant-sdk
+    export AGENT_KEY=<the agent key shown when you created it>   # funded wallet on Base Sepolia
 
-## Use — a 402 is paid + retried only if it passes the policy
-import { createPaidFetch } from "@agentpay/merchant-sdk/client";
-const policy = ${JSON.stringify(policy)};
-const fetch = createPaidFetch({ privateKey: process.env.AGENT_KEY, dailyLimitUsdc: ${dailyLimit || "10"}, policy });
-# hand \`fetch\` to your tools: blocked sites, off-list vendors, and over-cap payments are refused automatically.
+## Use
+    import { createPaidFetch } from "@agentpay/merchant-sdk/client";
+    const policy = ${JSON.stringify(policy)};
+    const fetch = createPaidFetch({ privateKey: process.env.AGENT_KEY, dailyLimitUsdc: ${dailyLimit || "10"}, policy });
+    // hand fetch to your tools: blocked sites, off-list vendors, and over-cap payments are refused.
 
 Agent wallet: ${agent.address}
-Network: Base Sepolia · USDC. Funded balance is the hard cap; the policy + daily limit are extra guardrails.`
+Network: Base Sepolia · USDC. Funded balance is the hard cap; policy + daily limit are guardrails.`
     : "";
 
   return (
@@ -296,7 +322,7 @@ Network: Base Sepolia · USDC. Funded balance is the hard cap; the policy + dail
             />
           </div>
           <div className="field">
-            <label>Authorized models — model ids the agent may use (blank = any)</label>
+            <label>Authorized models — ids the agent may use (blank = any)</label>
             <textarea
               className="inp"
               rows={2}
@@ -306,14 +332,35 @@ Network: Base Sepolia · USDC. Funded balance is the hard cap; the policy + dail
             />
           </div>
           <div className="field">
-            <label>Intent rules — one per line: label, host, max USDC</label>
-            <textarea
-              className="inp"
-              rows={3}
-              placeholder={"data, api.vendor.com, 2\ncompute, gpu.host.com, 5"}
-              value={intents}
-              onChange={(e) => setIntents(e.target.value)}
-            />
+            <label>Intent rules — pre-approve spend by purpose, with a per-payment cap</label>
+            {intentRules.map((r, i) => (
+              <div className="rule-row" key={i}>
+                <input
+                  className="inp"
+                  placeholder="intent (data)"
+                  value={r.label}
+                  onChange={(e) => updateRule(i, "label", e.target.value)}
+                />
+                <input
+                  className="inp"
+                  placeholder="host (api.vendor.com)"
+                  value={r.host}
+                  onChange={(e) => updateRule(i, "host", e.target.value)}
+                />
+                <input
+                  className="inp"
+                  placeholder="max USDC"
+                  value={r.max}
+                  onChange={(e) => updateRule(i, "max", e.target.value)}
+                />
+                <button type="button" className="btn ghost sm" onClick={() => removeRule(i)}>
+                  ✕
+                </button>
+              </div>
+            ))}
+            <button type="button" className="btn ghost sm" onClick={addRule}>
+              + Add rule
+            </button>
           </div>
           <button type="button" className="btn ghost" onClick={save}>
             {savedMsg ? "Saved ✓" : "Save policy"}
@@ -321,14 +368,20 @@ Network: Base Sepolia · USDC. Funded balance is the hard cap; the policy + dail
 
           <div className="label section">4 · Connect with OpenClaw</div>
           <p className="muted">
-            Paste this skill into OpenClaw and set <code>AGENT_KEY</code> to the key above. Your
-            OpenClaw agent then pays for x402 APIs on its own, within budget and policy.
+            Save this as <code>skills/agentpay-payments/SKILL.md</code> in your OpenClaw
+            workspace, set <code>AGENT_KEY</code> to the key above, then run{" "}
+            <code>/skill agentpay-payments</code>.
           </p>
           <div className="keyrow">
-            <span className="muted">OpenClaw skill (includes your policy)</span>
-            <button type="button" className="btn ghost sm" onClick={() => copy(skill, "skill")}>
-              {copied === "skill" ? "Copied ✓" : "Copy skill"}
-            </button>
+            <span className="muted">OpenClaw skill (SKILL.md, includes your policy)</span>
+            <span>
+              <button type="button" className="btn ghost sm" onClick={() => copy(skill, "skill")}>
+                {copied === "skill" ? "Copied ✓" : "Copy"}
+              </button>{" "}
+              <button type="button" className="btn ghost sm" onClick={downloadSkill}>
+                Download SKILL.md
+              </button>
+            </span>
           </div>
           <div className="codeblock">{skill}</div>
 

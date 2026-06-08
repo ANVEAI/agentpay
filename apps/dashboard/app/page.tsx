@@ -23,6 +23,34 @@ export default function Page() {
         </p>
       </section>
 
+      <section className="how">
+        <ol className="steps">
+          <li>
+            <span className="n">1</span>
+            <div>
+              <b>Gate a route</b>
+              <p>
+                One line: <code>{"paymentGateway({ payTo, amount })"}</code>
+              </p>
+            </div>
+          </li>
+          <li>
+            <span className="n">2</span>
+            <div>
+              <b>The agent pays</b>
+              <p>It gets an x402 402, pays USDC, and retries — on its own.</p>
+            </div>
+          </li>
+          <li>
+            <span className="n">3</span>
+            <div>
+              <b>You get paid</b>
+              <p>USDC lands in your wallet. Non-custodial, settled on-chain.</p>
+            </div>
+          </li>
+        </ol>
+      </section>
+
       <Payments />
       <CloudPanel />
 

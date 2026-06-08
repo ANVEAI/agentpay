@@ -101,6 +101,62 @@ a:hover {
   line-height: 1.5;
 }
 
+/* How it works — a 3-step process flow (sequence, not a decorative feature grid). */
+.how {
+  margin: 6px 0 24px;
+}
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.steps li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: linear-gradient(180deg, var(--panel), var(--panel-2));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 15px 16px;
+}
+.steps .n {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: rgba(108, 124, 255, 0.14);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 14px;
+  font-family: var(--font-display), sans-serif;
+}
+.steps b {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 3px;
+}
+.steps p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.steps code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11.5px;
+  color: var(--accent-2);
+}
+@media (max-width: 600px) {
+  .steps {
+    grid-template-columns: 1fr;
+  }
+}
+
 .btn {
   background: var(--accent);
   color: white;
@@ -110,22 +166,40 @@ a:hover {
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: filter 0.15s ease, opacity 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 20px -10px rgba(108, 124, 255, 0.65);
+  transition: filter 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease, opacity 0.15s ease;
 }
 .btn:hover {
   filter: brightness(1.08);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3), 0 12px 26px -10px rgba(108, 124, 255, 0.75);
+}
+.btn:active {
+  transform: translateY(0);
 }
 .btn:disabled {
   opacity: 0.55;
   cursor: default;
+  box-shadow: none;
+  transform: none;
+}
+.btn:focus-visible,
+.inp:focus-visible,
+.nav a:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
 }
 .btn.ghost {
   background: transparent;
   color: var(--muted);
   border: 1px solid var(--border);
+  box-shadow: none;
 }
 .btn.ghost:hover {
   color: var(--text);
+  border-color: var(--accent);
 }
 
 .account {

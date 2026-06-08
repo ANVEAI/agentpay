@@ -1,15 +1,20 @@
 import { authContext } from "@/lib/cp/auth";
-import { createProject, listProjectsByOwner, listAllProjects } from "@/lib/cp/store";
+import { createProject, listProjectsByOwner, listAllProjects, type Project } from "@/lib/cp/store";
 
 export const runtime = "nodejs";
+
+// Never expose the key hash or webhook secret.
+function strip(p: Project) {
+  const { keyHash, webhookSecret, ...safe } = p;
+  return safe;
+}
 
 export async function GET(req: Request) {
   const auth = await authContext(req);
   if (!auth) return Response.json({ error: "unauthorized" }, { status: 401 });
   const projects =
     auth.kind === "admin" ? await listAllProjects() : await listProjectsByOwner(auth.owner);
-  // never return keyHash
-  return Response.json({ projects: projects.map(({ keyHash, ...p }) => p) });
+  return Response.json({ projects: projects.map(strip) });
 }
 
 export async function POST(req: Request) {
@@ -26,9 +31,8 @@ export async function POST(req: Request) {
   let payTo: string;
   if (auth.kind === "session") {
     owner = auth.owner;
-    payTo = auth.owner; // payments go to the signed-in wallet
+    payTo = auth.owner;
   } else {
-    // admin / coding-agent provisioning: payTo must be supplied
     if (!body.payTo) {
       return Response.json({ error: "payTo is required for admin-token requests" }, { status: 400 });
     }
@@ -42,8 +46,8 @@ export async function POST(req: Request) {
     payTo,
     amount: String(amount),
     network: "base-sepolia",
+    webhookUrl: body.webhookUrl ? String(body.webhookUrl) : undefined,
   });
 
-  const { keyHash, ...safe } = project;
-  return Response.json({ project: safe, apiKey }); // apiKey returned once
+  return Response.json({ project: strip(project), apiKey });
 }

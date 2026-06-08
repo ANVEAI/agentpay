@@ -280,6 +280,16 @@ a:hover {
   padding: 5px 10px;
   font-size: 12px;
 }
+.tiny {
+  font-size: 11px;
+  margin-top: 2px;
+}
+.actions {
+  white-space: nowrap;
+}
+.actions .btn.sm {
+  margin-right: 4px;
+}
 
 .pay {
   text-align: center;

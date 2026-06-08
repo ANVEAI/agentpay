@@ -11,6 +11,7 @@ interface Row {
   from: string;
   value: bigint;
   txHash: string;
+  resource: string; // gateway metadata if recorded, else "" (direct)
 }
 
 export function Payments() {
@@ -35,12 +36,24 @@ export function Payments() {
       setLoading(true);
       setErr(null);
       try {
-        // Public RPCs (e.g. sepolia.base.org) cap eth_getLogs at a 2000-block
-        // range, so scan recent history in safe sub-2000-block chunks. For full
-        // history, point at an indexing RPC or record payments server-side.
+        // Gateway-recorded metadata (resource), keyed by tx hash.
+        const resourceByTx: Record<string, string> = {};
+        try {
+          const er = await fetch("/api/cp/events");
+          if (er.ok) {
+            for (const e of (await er.json()).events ?? []) {
+              if (e.txHash) resourceByTx[String(e.txHash).toLowerCase()] = e.resource || "";
+            }
+          }
+        } catch {
+          // not signed in / no control plane — fall back to plain on-chain view
+        }
+
+        // On-chain USDC transfers to this wallet — catches every payment (gateway,
+        // button, payment link). Public RPC caps getLogs at 2000 blocks, so chunk it.
         const latest = await client.getBlockNumber();
         const CHUNK = 1800n;
-        const MAX_CHUNKS = 12; // ~21.6k blocks (~12h on Base) of lookback
+        const MAX_CHUNKS = 12;
         const ranges: { from: bigint; to: bigint }[] = [];
         let cursor = latest;
         for (let i = 0; i < MAX_CHUNKS && cursor > 0n; i++) {
@@ -64,12 +77,17 @@ export function Payments() {
         all.sort((a, b) =>
           a.blockNumber < b.blockNumber ? 1 : a.blockNumber > b.blockNumber ? -1 : 0,
         );
-        const mapped = all.map((l) => ({
-          from: (l.args.from as string) ?? "",
-          value: (l.args.value as bigint) ?? 0n,
-          txHash: l.transactionHash ?? "",
-        }));
-        setRows(mapped);
+        setRows(
+          all.map((l) => {
+            const txHash = l.transactionHash ?? "";
+            return {
+              from: (l.args.from as string) ?? "",
+              value: (l.args.value as bigint) ?? 0n,
+              txHash,
+              resource: resourceByTx[txHash.toLowerCase()] ?? "",
+            };
+          }),
+        );
       } catch (e) {
         if (!cancelled) setErr((e as Error).message);
       } finally {
@@ -107,11 +125,9 @@ export function Payments() {
 
       <div className="label section">Payments received</div>
       {loading && <p className="muted">Loading on-chain…</p>}
-      {err && <p className="err">Couldn’t load logs: {err}</p>}
+      {err && <p className="err">Couldn’t load payments: {err}</p>}
       {!loading && !err && rows.length === 0 && (
-        <p className="muted">
-          No payments yet. Share your receiving address or an x402 endpoint to get paid.
-        </p>
+        <p className="muted">No payments yet. Share a payment link or add the gateway to start.</p>
       )}
       {rows.length > 0 && (
         <table className="tbl">
@@ -119,7 +135,8 @@ export function Payments() {
             <tr>
               <th>From</th>
               <th>Amount</th>
-              <th>Transaction</th>
+              <th>Resource</th>
+              <th>Tx</th>
             </tr>
           </thead>
           <tbody>
@@ -127,6 +144,7 @@ export function Payments() {
               <tr key={`${r.txHash}-${i}`}>
                 <td>{short(r.from)}</td>
                 <td>{formatUnits(r.value, USDC_DECIMALS)} USDC</td>
+                <td>{r.resource ? r.resource : <span className="muted">direct</span>}</td>
                 <td>
                   <a href={`${EXPLORER}/tx/${r.txHash}`} target="_blank" rel="noreferrer">
                     {short(r.txHash)}

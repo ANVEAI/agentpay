@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { formatUnits } from "viem";
-import { USDC_DECIMALS, EXPLORER } from "@/lib/chains";
 import { short } from "@/lib/format";
 
 interface Project {
@@ -12,16 +10,8 @@ interface Project {
   amount: string;
   network: string;
   keyPrefix: string;
+  webhookUrl: string;
   createdAt: string;
-}
-interface Ev {
-  id: string;
-  projectId: string;
-  txHash: string;
-  from: string;
-  amount: string;
-  resource: string;
-  at: string;
 }
 interface Agent {
   id: string;
@@ -34,21 +24,13 @@ interface Agent {
   createdAt: string;
 }
 
-function fmtAmount(base: string): string {
-  try {
-    return `${formatUnits(BigInt(base || "0"), USDC_DECIMALS)} USDC`;
-  } catch {
-    return base;
-  }
-}
-
 export function CloudPanel() {
   const [authed, setAuthed] = useState<boolean | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [events, setEvents] = useState<Ev[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("0.1");
+  const [webhook, setWebhook] = useState("");
   const [newKey, setNewKey] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [origin, setOrigin] = useState("");
@@ -62,8 +44,6 @@ export function CloudPanel() {
     }
     setAuthed(true);
     setProjects((await r.json()).projects ?? []);
-    const er = await fetch("/api/cp/events");
-    if (er.ok) setEvents((await er.json()).events ?? []);
     const ar = await fetch("/api/cp/agents");
     if (ar.ok) setAgents((await ar.json()).agents ?? []);
   }
@@ -87,17 +67,51 @@ export function CloudPanel() {
       const r = await fetch("/api/cp/projects", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ name, amount }),
+        body: JSON.stringify({ name, amount, webhookUrl: webhook || undefined }),
       });
       const d = await r.json();
       if (d.apiKey) {
         setNewKey(d.apiKey);
         setName("");
+        setWebhook("");
         await load();
       }
     } finally {
       setBusy(false);
     }
+  }
+
+  async function rotate(id: string) {
+    if (!window.confirm("Rotate the API key? The old key stops working immediately.")) return;
+    const r = await fetch(`/api/cp/projects/${id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ rotateKey: true }),
+    });
+    const d = await r.json();
+    if (d.apiKey) {
+      setNewKey(d.apiKey);
+      await load();
+    }
+  }
+
+  async function del(id: string) {
+    if (!window.confirm("Delete this project? Removes its key, agents, and recorded payments.")) return;
+    await fetch(`/api/cp/projects/${id}`, { method: "DELETE" });
+    await load();
+  }
+
+  async function edit(p: Project) {
+    const amt = window.prompt("Price in USDC", p.amount);
+    if (amt === null) return;
+    const wh = window.prompt("Webhook URL (blank = none)", p.webhookUrl || "");
+    if (wh === null) return;
+    await fetch(`/api/cp/projects/${p.id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ amount: amt, webhookUrl: wh }),
+    });
+    await load();
   }
 
   if (authed === false) {
@@ -120,6 +134,7 @@ export function CloudPanel() {
       <form onSubmit={create} className="cp-form">
         <input className="inp" placeholder="Project name" value={name} onChange={(e) => setName(e.target.value)} required />
         <input className="inp" placeholder="Price (USDC)" value={amount} onChange={(e) => setAmount(e.target.value)} required />
+        <input className="inp" placeholder="Webhook URL (optional)" value={webhook} onChange={(e) => setWebhook(e.target.value)} />
         <button className="btn" disabled={busy}>
           {busy ? "Creating…" : "Create project"}
         </button>
@@ -150,29 +165,30 @@ export function CloudPanel() {
             <tr>
               <th>Name</th>
               <th>Price</th>
-              <th>payTo</th>
-              <th>Key</th>
-              <th>Payment link</th>
+              <th>Webhook</th>
+              <th>Link</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {projects.map((p) => (
               <tr key={p.id}>
-                <td>{p.name}</td>
-                <td>{p.amount} USDC</td>
-                <td>{short(p.payTo)}</td>
-                <td>{p.keyPrefix}…</td>
                 <td>
-                  <a href={`/pay/${p.id}`} target="_blank" rel="noreferrer">
-                    open
-                  </a>{" "}
-                  <button
-                    type="button"
-                    className="btn ghost sm"
-                    onClick={() => copy(`${origin}/pay/${p.id}`, `link-${p.id}`)}
-                  >
-                    {copied === `link-${p.id}` ? "Copied ✓" : "Copy"}
+                  {p.name}
+                  <div className="muted tiny">{p.keyPrefix}…</div>
+                </td>
+                <td>{p.amount} USDC</td>
+                <td>{p.webhookUrl ? "on" : <span className="muted">—</span>}</td>
+                <td>
+                  <a href={`/pay/${p.id}`} target="_blank" rel="noreferrer">open</a>{" "}
+                  <button type="button" className="btn ghost sm" onClick={() => copy(`${origin}/pay/${p.id}`, `link-${p.id}`)}>
+                    {copied === `link-${p.id}` ? "✓" : "copy"}
                   </button>
+                </td>
+                <td className="actions">
+                  <button type="button" className="btn ghost sm" onClick={() => edit(p)}>Edit</button>
+                  <button type="button" className="btn ghost sm" onClick={() => rotate(p.id)}>Rotate</button>
+                  <button type="button" className="btn ghost sm" onClick={() => del(p.id)}>Delete</button>
                 </td>
               </tr>
             ))}
@@ -204,38 +220,6 @@ export function CloudPanel() {
                 <td>{a.dailyLimit ? `${a.dailyLimit} USDC` : "—"}</td>
                 <td>{a.spentToday != null ? `${a.spentToday} USDC` : "—"}</td>
                 <td>{a.remaining != null ? `${a.remaining} USDC` : "—"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-
-      <div className="label section">Recorded payments (via gateway)</div>
-      {events.length === 0 ? (
-        <p className="muted">No gateway payments recorded yet.</p>
-      ) : (
-        <table className="tbl">
-          <thead>
-            <tr>
-              <th>Resource</th>
-              <th>From</th>
-              <th>Amount</th>
-              <th>When</th>
-              <th>Tx</th>
-            </tr>
-          </thead>
-          <tbody>
-            {events.map((e) => (
-              <tr key={e.id}>
-                <td>{e.resource}</td>
-                <td>{short(e.from)}</td>
-                <td>{fmtAmount(e.amount)}</td>
-                <td>{new Date(e.at).toLocaleString()}</td>
-                <td>
-                  <a href={`${EXPLORER}/tx/${e.txHash}`} target="_blank" rel="noreferrer">
-                    {short(e.txHash)}
-                  </a>
-                </td>
               </tr>
             ))}
           </tbody>

@@ -106,10 +106,16 @@ export function createPaymentGateway(config: GatewayConfig) {
     return { x402Version: X402_VERSION, error, accepts: [requirement] };
   }
 
-  async function report(payment: VerifyResult, resource?: string): Promise<void> {
-    if (!config.apiKey) return;
+  // Managed mode: record the payment to the control plane, which de-dups by
+  // (project, txHash) and tells us whether it was a duplicate. This is the durable,
+  // restart-safe replay guard. If the control plane is unreachable we fail open —
+  // the on-chain freshness check still bounds any replay window.
+  async function recordManaged(
+    payment: VerifyResult,
+    resource?: string,
+  ): Promise<{ duplicate: boolean }> {
     try {
-      await fetch(`${baseUrlOf(config)}/api/cp/events`, {
+      const res = await fetch(`${baseUrlOf(config)}/api/cp/events`, {
         method: "POST",
         headers: { "content-type": "application/json", authorization: `Bearer ${config.apiKey}` },
         body: JSON.stringify({
@@ -119,8 +125,11 @@ export function createPaymentGateway(config: GatewayConfig) {
           resource: resource ?? config.resource ?? "/",
         }),
       });
+      if (!res.ok) return { duplicate: false };
+      const data = await res.json().catch(() => ({}));
+      return { duplicate: !!data.duplicate };
     } catch {
-      // reporting is best-effort; never block the request on it
+      return { duplicate: false };
     }
   }
 
@@ -135,7 +144,9 @@ export function createPaymentGateway(config: GatewayConfig) {
     if (!tx) {
       return { paid: false, status: 402, requirement, body: body(requirement, "Payment required") };
     }
-    if (await store.has(tx)) {
+
+    // Static mode: local replay pre-check. (Managed mode de-dups durably at commit.)
+    if (!config.apiKey && (await store.has(tx))) {
       return { paid: false, status: 402, requirement, body: body(requirement, "Payment already used") };
     }
 
@@ -149,8 +160,15 @@ export function createPaymentGateway(config: GatewayConfig) {
       };
     }
 
-    await store.add(tx);
-    void report(result, opts.resource);
+    if (config.apiKey) {
+      const { duplicate } = await recordManaged(result, opts.resource);
+      if (duplicate) {
+        return { paid: false, status: 402, requirement, body: body(requirement, "Payment already used") };
+      }
+    } else {
+      await store.add(tx);
+    }
+
     return { paid: true, payment: result };
   }
 

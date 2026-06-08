@@ -158,6 +158,24 @@ try {
       needToken();
       out(await api("/api/cp/agents?projectId=" + (args.project || ""), "GET"));
       break;
+    case "edit-project":
+      needToken();
+      out(
+        await api("/api/cp/projects/" + (args.project || ""), "PATCH", {
+          ...(args.name ? { name: args.name } : {}),
+          ...(args.amount ? { amount: args.amount } : {}),
+          ...(args.webhook ? { webhookUrl: args.webhook } : {}),
+        }),
+      );
+      break;
+    case "rotate-key":
+      needToken();
+      out(await api("/api/cp/projects/" + (args.project || ""), "PATCH", { rotateKey: true }));
+      break;
+    case "delete-project":
+      needToken();
+      out(await api("/api/cp/projects/" + (args.project || ""), "DELETE"));
+      break;
     default:
       console.log(`AgentPay CLI
 
@@ -170,7 +188,10 @@ Env:   AGENTPAY_API_URL (endpoint, default http://localhost:3000), AGENTPAY_ADMI
   create-project --name N --amount A --pay-to 0x...       create a project, mint an API key
   list-projects
   add-agent --project <id> --label L [--budget 10] [--address 0x...]
-  list-agents --project <id>`);
+  list-agents --project <id>
+  edit-project --project <id> [--name N] [--amount A] [--webhook URL]
+  rotate-key --project <id>                               revoke + reissue the API key
+  delete-project --project <id>`);
   }
 } catch (e) {
   console.error("error:", e.message);

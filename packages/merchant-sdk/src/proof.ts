@@ -1,10 +1,16 @@
 import type { Hex, PaymentProof } from "./types";
 
-// Canonical message the paying agent signs. Binding to payTo + amount + txHash means a
-// signature is specific to this payment and can't be reused elsewhere; requiring the
-// signer to equal the on-chain payer proves control of the wallet that actually paid.
-export function paymentMessage(payTo: string, amount: string, txHash: string): string {
-  return `agentpay-payment:v1:${payTo.toLowerCase()}:${amount}:${txHash.toLowerCase()}`;
+// Canonical message the paying agent signs. Binding to payTo + amount + resource + txHash
+// means a signature is specific to this payment AND this resource (can't be reused for a
+// different endpoint); requiring the signer to equal the on-chain payer proves control of
+// the wallet that actually paid.
+export function paymentMessage(
+  payTo: string,
+  amount: string,
+  txHash: string,
+  resource: string,
+): string {
+  return `agentpay-payment:v1:${payTo.toLowerCase()}:${amount}:${resource}:${txHash.toLowerCase()}`;
 }
 
 function b64encode(s: string): string {

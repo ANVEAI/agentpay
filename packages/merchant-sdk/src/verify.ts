@@ -125,7 +125,12 @@ export async function verifyPayment(
     if (!proof.signature || !proof.signer) {
       return { ok: false, reason: "payment proof is not signed", paid: total.toString(), from, txHash: proof.txHash };
     }
-    const message = paymentMessage(requirement.payTo, requirement.maxAmountRequired, proof.txHash);
+    const message = paymentMessage(
+      requirement.payTo,
+      requirement.maxAmountRequired,
+      proof.txHash,
+      requirement.resource,
+    );
     const validSig = await verifyMessage({
       address: proof.signer,
       message,

@@ -1,6 +1,6 @@
 import { authContext } from "@/lib/cp/auth";
 import { createProject, listProjectsByOwner, listAllProjects, type Project } from "@/lib/cp/store";
-import { validateName, validateAmount, validatePayTo } from "@/lib/cp/validate";
+import { validateName, validateAmount, validatePayTo, validateWebhookUrl } from "@/lib/cp/validate";
 import { limited } from "@/lib/cp/ratelimit";
 
 export const runtime = "nodejs";
@@ -30,6 +30,10 @@ export async function POST(req: Request) {
   if (nameErr) return Response.json({ error: nameErr }, { status: 400 });
   const amountErr = validateAmount(body.amount);
   if (amountErr) return Response.json({ error: amountErr }, { status: 400 });
+  if (body.webhookUrl) {
+    const whErr = validateWebhookUrl(body.webhookUrl);
+    if (whErr) return Response.json({ error: whErr }, { status: 400 });
+  }
 
   let owner: string;
   let payTo: string;

@@ -78,7 +78,12 @@ export function createPaidFetch(opts: PaidFetchOptions): typeof fetch {
     // Sign the proof with the paying wallet so the merchant can bind it to the payer.
     const account = privateKeyToAccount(opts.privateKey);
     const signature = await account.signMessage({
-      message: paymentMessage(requirement.payTo, requirement.maxAmountRequired, hash),
+      message: paymentMessage(
+        requirement.payTo,
+        requirement.maxAmountRequired,
+        hash,
+        requirement.resource,
+      ),
     });
     const headers = new Headers(init?.headers);
     headers.set(header, encodeProof({ txHash: hash, signer: account.address, signature }));

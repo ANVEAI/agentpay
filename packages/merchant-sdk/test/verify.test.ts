@@ -95,7 +95,7 @@ describe("verifyPayment", () => {
     const req = createPaymentRequirement({ payTo: PAY_TO, amount: 1, resource: "/x" });
     receipts.set(TX, receipt(1_000_000n, account.address));
     const signature = await account.signMessage({
-      message: paymentMessage(req.payTo, req.maxAmountRequired, TX),
+      message: paymentMessage(req.payTo, req.maxAmountRequired, TX, req.resource),
     });
     const r = await verifyPayment(
       req,
@@ -118,7 +118,7 @@ describe("verifyPayment", () => {
     const req = createPaymentRequirement({ payTo: PAY_TO, amount: 1, resource: "/x" });
     receipts.set(TX, receipt(1_000_000n, PAYER)); // payer != signer
     const signature = await account.signMessage({
-      message: paymentMessage(req.payTo, req.maxAmountRequired, TX),
+      message: paymentMessage(req.payTo, req.maxAmountRequired, TX, req.resource),
     });
     const r = await verifyPayment(
       req,

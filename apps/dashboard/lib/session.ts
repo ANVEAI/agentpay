@@ -8,10 +8,23 @@ export interface SessionData {
   chainId?: number;
 }
 
+const DEFAULT_DEV_SECRET = "agentpay-dev-only-insecure-session-password-change-me-please";
+const secret = process.env.SESSION_SECRET;
+
+// In production, refuse to start with a missing/weak/default secret — otherwise anyone who
+// knows the (public, open-source) default could forge a session cookie for any wallet.
+if (
+  process.env.NODE_ENV === "production" &&
+  (!secret || secret === DEFAULT_DEV_SECRET || secret.length < 32)
+) {
+  throw new Error(
+    "SESSION_SECRET must be set to a strong value (>= 32 chars) in production. " +
+      "Refusing to start with the insecure default.",
+  );
+}
+
 export const sessionOptions: SessionOptions = {
-  password:
-    process.env.SESSION_SECRET ||
-    "agentpay-dev-only-insecure-session-password-change-me-please",
+  password: secret || DEFAULT_DEV_SECRET,
   cookieName: "agentpay_siwe",
   cookieOptions: {
     httpOnly: true,

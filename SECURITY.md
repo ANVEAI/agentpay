@@ -28,22 +28,46 @@ We aim to acknowledge within 72 hours.
 
 - **Account takeover.** Sign-In-With-Ethereum uses a single-use nonce (consumed on every
   attempt) bound to the request domain, over an httpOnly + SameSite session cookie; the
-  verify endpoint is rate-limited. API keys are stored hashed; the admin token is env-only.
+  verify endpoint is rate-limited. Production refuses to boot with a missing/default
+  `SESSION_SECRET` (no forgeable cookies). API keys are stored hashed; the admin token is
+  env-only and compared in constant time.
 - **Reversed / reorged transactions.** USDC is final (no chargebacks). The gateway requires
   block confirmations before honoring a payment, so a shallow reorg can't reverse access.
 - **Payment manipulation.** Amount, recipient, and the USDC contract address are verified
   on-chain (a fake token or spoofed Transfer log is ignored); the tx hash is format-checked;
   replays are one-time-use; stale transfers are rejected; and the proof is signed by the
-  paying wallet, so a third party who sees an in-flight tx hash can't claim it.
+  paying wallet and bound to payTo + amount + resource + tx hash, so a third party who sees an
+  in-flight tx hash can't claim it and a proof can't be reused on a different endpoint.
 
 ## Known limitations (MVP)
 
-- Proof-of-payment is signed by the paying wallet (EIP-191) and bound to amount + recipient +
-  tx hash, so a leaked tx hash can't be replayed by a third party. It does not yet use EIP-3009
-  `transferWithAuthorization` (merchant-submitted settlement) — the agent sends its own transfer.
+- Proof-of-payment is signed by the paying wallet (EIP-191) and bound to recipient + amount +
+  resource + tx hash, so a leaked tx hash can't be replayed by a third party. It does not yet
+  use EIP-3009 `transferWithAuthorization` (merchant-submitted settlement) — the agent sends
+  its own transfer.
 - Rate limiting and the static-mode replay store are **in-memory** — use Redis/DB for
   multi-instance production.
 - Testnet only for now.
+
+## Hardening required before a multi-tenant hosted plane
+
+The self-host model — one operator owns the server, the admin token, and the API keys — is the
+current target, and these are safe under it. A shared, multi-tenant cloud raises the bar; address
+each before hosting other people's merchants:
+
+- **Re-verify payments at the events endpoint.** `/api/cp/events` records `from`/`amount` as
+  reported by the API-key holder; the gateway verifies on-chain before calling it, but the
+  endpoint itself trusts the caller. A shared plane should independently re-verify on-chain and
+  derive `from`/`amount` from the receipt.
+- **Server-side spend caps.** Per-agent `dailyLimit` is enforced best-effort in the SDK
+  (`createPaidFetch`); a hosted plane should enforce it where payments are accepted.
+- **Scope admin provisioning per tenant.** The single `AGENTPAY_ADMIN_TOKEN` is all-or-nothing
+  and can set an arbitrary project `owner` — fine for one operator, unsafe shared. Use
+  per-merchant credentials.
+- **Trust the right client IP.** Rate-limit keys use `x-forwarded-for`; behind a proxy, pin to
+  the platform's trusted client IP so the header can't be spoofed for fresh buckets.
+- **Block webhook SSRF at egress.** Webhook URLs are validated to http(s); a shared plane must
+  also block private/link-local IP ranges so a tenant can't point a webhook at internal infra.
 
 ## Handling secrets
 

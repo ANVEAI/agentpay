@@ -27,3 +27,22 @@ export function validateDailyLimit(limit: unknown): string | null {
   if (!Number.isFinite(n) || n < 0) return "dailyLimit must be a non-negative number";
   return null;
 }
+
+// Reject malformed or non-http(s) webhook URLs (no javascript:/file:/data: schemes).
+// NOTE: blocking private/internal IP ranges (full SSRF defense) is a multi-tenant cloud
+// concern — do that at the egress layer; a self-hoster may legitimately target an
+// internal service.
+export function validateWebhookUrl(url: unknown): string | null {
+  const s = String(url ?? "").trim();
+  if (!s) return null; // optional
+  let u: URL;
+  try {
+    u = new URL(s);
+  } catch {
+    return "webhookUrl must be a valid URL";
+  }
+  if (u.protocol !== "https:" && u.protocol !== "http:") {
+    return "webhookUrl must use http(s)";
+  }
+  return null;
+}

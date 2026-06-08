@@ -3,8 +3,8 @@ import { paymentMessage, encodeProof, decodeProof } from "../src/proof";
 
 describe("proof", () => {
   it("paymentMessage is canonical and lowercased", () => {
-    expect(paymentMessage("0xABC", "100000", "0xDEF")).toBe(
-      "agentpay-payment:v1:0xabc:100000:0xdef",
+    expect(paymentMessage("0xABC", "100000", "0xDEF", "/r")).toBe(
+      "agentpay-payment:v1:0xabc:100000:/r:0xdef",
     );
   });
 

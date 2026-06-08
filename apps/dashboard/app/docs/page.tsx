@@ -1,8 +1,11 @@
+import { getServerOrigin } from "@/lib/origin";
+
 export const metadata = {
   title: "AgentPay — Integration docs",
 };
 
-export default function DocsPage() {
+export default async function DocsPage() {
+  const origin = await getServerOrigin();
   return (
     <main className="container docs">
       <header className="topbar">
@@ -57,8 +60,7 @@ const denied = await gate.guard(request); // 402 Response, or null if paid`}</di
         Use a project API key instead of inline config. The SDK fetches your payTo and price, and
         reports each payment to this dashboard. Create a key under Projects &amp; API keys.
       </p>
-      <div className="codeblock">{`paymentGateway({ apiKey: "ap_live_…" });                          // hosted
-paymentGateway({ apiKey: "ap_live_…", baseUrl: "https://your-host" }); // self-hosted`}</div>
+      <div className="codeblock">{`paymentGateway({ apiKey: "ap_live_…", baseUrl: "${origin}" });`}</div>
 
       <h2>The agent side (autonomous)</h2>
       <p>Give an agent a funded wallet and it pays 402s by itself — extract requirement, pay USDC, retry. Drop-in fetch:</p>
@@ -86,6 +88,7 @@ pnpm agentpay add-agent --project <id> --label research-bot --budget 10`}</div>
         Set it once with <code>AGENTPAY_API_URL</code> (or <code>baseUrl</code> / the button&apos;s{" "}
         <code>base-url</code>). Default is the cloud; for self-host point it at your dashboard URL.
       </p>
+      <div className="codeblock">{`This instance is served at: ${origin}`}</div>
 
       <h2>Deployment: custom vs agentic</h2>
       <p>
@@ -101,10 +104,10 @@ pnpm agentpay add-agent --project <id> --label research-bot --budget 10`}</div>
 
       <h2>Drop-in payment button (like Stripe)</h2>
       <p>Add a USDC pay or subscribe button to any page in one line — no framework needed.</p>
-      <div className="codeblock">{`<script src="https://your-host/agentpay-button.js"></script>
+      <div className="codeblock">{`<script src="${origin}/agentpay-button.js"></script>
 <agentpay-button to="0xYourWallet" amount="5"></agentpay-button>`}</div>
       <p>Managed (API key), or a subscription button:</p>
-      <div className="codeblock">{`<agentpay-button api-key="ap_live_…" base-url="https://your-host"></agentpay-button>
+      <div className="codeblock">{`<agentpay-button api-key="ap_live_…" base-url="${origin}"></agentpay-button>
 <agentpay-button to="0xYourWallet" amount="9" mode="subscription" label="Subscribe"></agentpay-button>`}</div>
       <p>
         It fires an <code>agentpay:success</code> event with the tx hash.{" "}

@@ -1,5 +1,6 @@
 import { authContext } from "@/lib/cp/auth";
 import { createProject, listProjectsByOwner, listAllProjects, type Project } from "@/lib/cp/store";
+import { validateName, validateAmount, validatePayTo } from "@/lib/cp/validate";
 
 export const runtime = "nodejs";
 
@@ -22,29 +23,28 @@ export async function POST(req: Request) {
   if (!auth) return Response.json({ error: "unauthorized" }, { status: 401 });
 
   const body = await req.json().catch(() => ({}));
-  const { name, amount } = body;
-  if (!name || amount == null) {
-    return Response.json({ error: "name and amount are required" }, { status: 400 });
-  }
+  const nameErr = validateName(body.name);
+  if (nameErr) return Response.json({ error: nameErr }, { status: 400 });
+  const amountErr = validateAmount(body.amount);
+  if (amountErr) return Response.json({ error: amountErr }, { status: 400 });
 
   let owner: string;
   let payTo: string;
   if (auth.kind === "session") {
     owner = auth.owner;
-    payTo = auth.owner;
+    payTo = auth.owner; // a valid address from SIWE
   } else {
-    if (!body.payTo) {
-      return Response.json({ error: "payTo is required for admin-token requests" }, { status: 400 });
-    }
+    const payErr = validatePayTo(body.payTo);
+    if (payErr) return Response.json({ error: payErr }, { status: 400 });
     payTo = String(body.payTo);
     owner = String(body.owner ?? body.payTo);
   }
 
   const { project, apiKey } = await createProject({
     owner,
-    name: String(name),
+    name: String(body.name).trim(),
     payTo,
-    amount: String(amount),
+    amount: String(body.amount),
     network: "base-sepolia",
     webhookUrl: body.webhookUrl ? String(body.webhookUrl) : undefined,
   });

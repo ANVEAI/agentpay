@@ -24,6 +24,7 @@ export async function fireWebhook(project: Project, event: PaymentEvent): Promis
       method: "POST",
       headers: { "content-type": "application/json", "x-agentpay-signature": signature },
       body: payload,
+      signal: AbortSignal.timeout(5000), // never let a slow webhook hang
     });
   } catch {
     // best-effort; do not block the payment response on webhook delivery

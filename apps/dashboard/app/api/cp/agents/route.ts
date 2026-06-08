@@ -6,6 +6,7 @@ import {
   getProjectById,
   enrichAgentsWithSpend,
 } from "@/lib/cp/store";
+import { validatePayTo, validateDailyLimit } from "@/lib/cp/validate";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
 export const runtime = "nodejs";
@@ -30,6 +31,12 @@ export async function POST(req: Request) {
 
   const gate = await authorizeProject(req, projectId);
   if ("error" in gate) return Response.json({ error: gate.error }, { status: gate.status });
+
+  if (body.address && validatePayTo(body.address)) {
+    return Response.json({ error: "address must be a valid EVM address (0x…)" }, { status: 400 });
+  }
+  const dlErr = validateDailyLimit(body.dailyLimit);
+  if (dlErr) return Response.json({ error: dlErr }, { status: 400 });
 
   let address = body.address ? String(body.address) : null;
   let privateKey: string | undefined;

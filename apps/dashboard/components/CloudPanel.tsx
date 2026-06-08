@@ -35,17 +35,23 @@ export function CloudPanel() {
   const [busy, setBusy] = useState(false);
   const [origin, setOrigin] = useState("");
   const [copied, setCopied] = useState("");
+  const [loadErr, setLoadErr] = useState<string | null>(null);
 
   async function load() {
-    const r = await fetch("/api/cp/projects");
-    if (r.status === 401) {
-      setAuthed(false);
-      return;
+    try {
+      const r = await fetch("/api/cp/projects");
+      if (r.status === 401) {
+        setAuthed(false);
+        return;
+      }
+      setAuthed(true);
+      setProjects((await r.json()).projects ?? []);
+      const ar = await fetch("/api/cp/agents");
+      if (ar.ok) setAgents((await ar.json()).agents ?? []);
+      setLoadErr(null);
+    } catch (e) {
+      setLoadErr((e as Error).message);
     }
-    setAuthed(true);
-    setProjects((await r.json()).projects ?? []);
-    const ar = await fetch("/api/cp/agents");
-    if (ar.ok) setAgents((await ar.json()).agents ?? []);
   }
 
   useEffect(() => {
@@ -127,10 +133,23 @@ export function CloudPanel() {
   }
 
   const snippet = newKey ? `paymentGateway({ apiKey: "${newKey}", baseUrl: "${origin}" })` : "";
+  const agentPrompt = newKey
+    ? `Integrate AgentPay (x402 / USDC agent payments) into my app.
+Endpoint: ${origin}
+API key: ${newKey}
+
+1. Install: npm i @agentpay/merchant-sdk
+2. Gate my paid route (Express):
+   import { paymentGateway } from "@agentpay/merchant-sdk/express";
+   app.use("/api/premium", paymentGateway({ apiKey: "${newKey}", baseUrl: "${origin}" }));
+3. Confirm an unpaid request returns HTTP 402, then a paid request returns 200.
+Docs: ${origin}/docs`
+    : "";
 
   return (
     <section className="card">
       <div className="label">Projects &amp; API keys</div>
+      {loadErr && <p className="err">Couldn’t load: {loadErr}</p>}
       <form onSubmit={create} className="cp-form">
         <input className="inp" placeholder="Project name" value={name} onChange={(e) => setName(e.target.value)} required />
         <input className="inp" placeholder="Price (USDC)" value={amount} onChange={(e) => setAmount(e.target.value)} required />
@@ -156,6 +175,12 @@ export function CloudPanel() {
             </button>
           </div>
           <div className="codeblock">{snippet}</div>
+          <div className="keyrow">
+            <span className="muted">Hand to a coding agent</span>
+            <button type="button" className="btn ghost sm" onClick={() => copy(agentPrompt, "prompt")}>
+              {copied === "prompt" ? "Copied ✓" : "Copy agent prompt"}
+            </button>
+          </div>
         </div>
       )}
 

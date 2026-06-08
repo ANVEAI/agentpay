@@ -1,5 +1,6 @@
 import { authContext } from "@/lib/cp/auth";
 import { getProjectById, updateProject, rotateProjectKey, deleteProject } from "@/lib/cp/store";
+import { validateAmount } from "@/lib/cp/validate";
 
 export const runtime = "nodejs";
 
@@ -28,6 +29,10 @@ export async function PATCH(req: Request, ctx: Ctx) {
     return Response.json({ ok: true, apiKey });
   }
 
+  if (b.amount !== undefined) {
+    const e = validateAmount(b.amount);
+    if (e) return Response.json({ error: e }, { status: 400 });
+  }
   const patch: { name?: string; amount?: string; webhookUrl?: string } = {};
   if (b.name !== undefined) patch.name = String(b.name);
   if (b.amount !== undefined) patch.amount = String(b.amount);

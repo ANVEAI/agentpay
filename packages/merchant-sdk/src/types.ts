@@ -44,17 +44,30 @@ export interface PaymentRequirement {
   expiresAt: number;
 }
 
+/** An EIP-3009 TransferWithAuthorization: a gasless USDC transfer signed by the payer. */
+export interface TransferAuthorization {
+  from: Address;
+  to: Address;
+  value: string;
+  validAfter: string;
+  validBefore: string;
+  nonce: Hex;
+  signature: Hex;
+}
+
 /**
- * Proof an agent submits that it paid: the settlement tx hash, plus an optional
- * signature from the paying wallet that binds the proof to the payer (closes the
- * "someone replays a known tx hash" gap). The gateway can require the signature.
+ * Proof an agent submits that it paid. Either a settled tx hash (+ optional signature
+ * binding it to the payer), or an EIP-3009 authorization the gateway settles on-chain.
  */
 export interface PaymentProof {
-  txHash: Hex;
+  /** Settlement tx hash (send-tx flow). Absent for an unsettled EIP-3009 authorization. */
+  txHash?: Hex;
   /** Wallet that signed this proof — must equal the on-chain payer. */
   signer?: Address;
   /** Signature over paymentMessage(payTo, amount, txHash). */
   signature?: Hex;
+  /** EIP-3009 gasless authorization — the gateway settles it, then verifies the resulting tx. */
+  authorization?: TransferAuthorization;
 }
 
 export interface VerifyResult {

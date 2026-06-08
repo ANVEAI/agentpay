@@ -1,4 +1,4 @@
-import type { Hex, PaymentProof } from "./types";
+import type { Hex, PaymentProof, TransferAuthorization } from "./types";
 
 // Canonical message the paying agent signs. Binding to payTo + amount + resource + txHash
 // means a signature is specific to this payment AND this resource (can't be reused for a
@@ -27,6 +27,11 @@ export function encodeProof(proof: PaymentProof): string {
   return b64encode(JSON.stringify(proof));
 }
 
+/** Encode an EIP-3009 gasless authorization for the X-PAYMENT header. */
+export function encodeAuthorizationProof(authorization: TransferAuthorization): string {
+  return encodeProof({ authorization });
+}
+
 const HEX_TX = /^0x[0-9a-fA-F]{64}$/;
 
 /** Parse an X-PAYMENT header value: base64 JSON proof, or a legacy bare tx hash. */
@@ -36,6 +41,9 @@ export function decodeProof(headerValue: string | null | undefined): PaymentProo
   if (HEX_TX.test(v)) return { txHash: v as Hex }; // legacy bare tx hash (unsigned)
   try {
     const obj = JSON.parse(b64decode(v));
+    if (obj && obj.authorization && typeof obj.authorization === "object") {
+      return { authorization: obj.authorization as TransferAuthorization };
+    }
     if (obj && typeof obj.txHash === "string") {
       return { txHash: obj.txHash as Hex, signer: obj.signer, signature: obj.signature };
     }

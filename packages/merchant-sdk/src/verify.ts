@@ -45,7 +45,7 @@ export async function verifyPayment(
   network: Network = baseSepolia,
   options: VerifyOptions = {},
 ): Promise<VerifyResult> {
-  if (!TX_HASH_RE.test(proof.txHash)) {
+  if (!proof.txHash || !TX_HASH_RE.test(proof.txHash)) {
     return { ok: false, reason: "invalid transaction hash", txHash: proof.txHash };
   }
 

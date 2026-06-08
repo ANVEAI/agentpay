@@ -3,8 +3,9 @@ import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia as viemBaseSepolia } from "viem/chains";
 import type { Hex, Network, PaymentRequirement } from "./types";
 import { baseSepolia } from "./chains";
-import { paymentMessage, encodeProof } from "./proof";
+import { paymentMessage, encodeProof, encodeAuthorizationProof } from "./proof";
 import { evaluatePolicy, type SpendPolicy } from "./policy";
+import { signTransferAuthorization } from "./authorization";
 
 export interface AgentWalletOptions {
   /** Agent wallet private key (0x-prefixed). Keep this in env, never in client code. */
@@ -60,6 +61,11 @@ export interface PaidFetchOptions extends AgentWalletOptions {
    * unpaid 402 instead of paying.
    */
   policy?: SpendPolicy;
+  /**
+   * Gasless mode: pay via an EIP-3009 signed authorization instead of sending the tx (the
+   * agent needs no ETH; the merchant gateway settles it). Requires a gateway with `settle`.
+   */
+  gasless?: boolean;
 }
 
 /**
@@ -81,6 +87,20 @@ export function createPaidFetch(opts: PaidFetchOptions): typeof fetch {
     init: RequestInit | undefined,
     requirement: PaymentRequirement,
   ): Promise<Response> => {
+    const headers = new Headers(init?.headers);
+
+    if (opts.gasless) {
+      // EIP-3009: sign a transfer authorization; the gateway settles it on-chain. No gas needed.
+      const auth = await signTransferAuthorization({
+        privateKey: opts.privateKey,
+        to: requirement.payTo,
+        amountBaseUnits: requirement.maxAmountRequired,
+        network: opts.network,
+      });
+      headers.set(header, encodeAuthorizationProof(auth));
+      return doFetch(input, { ...init, headers });
+    }
+
     const hash = await payRequirement(requirement, opts);
     // Sign the proof with the paying wallet so the merchant can bind it to the payer.
     const account = privateKeyToAccount(opts.privateKey);
@@ -92,7 +112,6 @@ export function createPaidFetch(opts: PaidFetchOptions): typeof fetch {
         requirement.resource,
       ),
     });
-    const headers = new Headers(init?.headers);
     headers.set(header, encodeProof({ txHash: hash, signer: account.address, signature }));
     return doFetch(input, { ...init, headers });
   };

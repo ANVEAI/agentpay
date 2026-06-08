@@ -8,7 +8,7 @@ import {
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia as viemBaseSepolia } from "viem/chains";
-import type { Network } from "./types";
+import type { Network, TransferAuthorization } from "./types";
 import { baseSepolia } from "./chains";
 
 // EIP-3009 TransferWithAuthorization. The agent SIGNS a USDC transfer authorization: it needs
@@ -33,16 +33,6 @@ export interface Eip712Domain {
   version: string;
   chainId: number;
   verifyingContract: Address;
-}
-
-export interface TransferAuthorization {
-  from: Address;
-  to: Address;
-  value: string;
-  validAfter: string;
-  validBefore: string;
-  nonce: Hex;
-  signature: Hex;
 }
 
 const EIP712_DOMAIN_ABI = [

@@ -1,4 +1,4 @@
-import type { Address, Network, PaymentRequirement, VerifyResult } from "./types";
+import type { Address, Hex, Network, PaymentRequirement, TransferAuthorization, VerifyResult } from "./types";
 import { createPaymentRequirement } from "./requirement";
 import { verifyPayment } from "./verify";
 import { decodeProof } from "./proof";
@@ -31,6 +31,12 @@ export interface GatewayConfig {
    * only to accept legacy unsigned tx-hash proofs.
    */
   requireSignature?: boolean;
+  /**
+   * Enable EIP-3009 gasless payments: given a signed authorization, submit it on-chain and
+   * return the tx hash (e.g. `(a) => settleTransferAuthorization({ submitterPrivateKey, authorization: a })`).
+   * If unset, the gateway rejects authorization proofs.
+   */
+  settle?: (authorization: TransferAuthorization) => Promise<Hex>;
 }
 
 export interface X402Body {
@@ -151,13 +157,34 @@ export function createPaymentGateway(config: GatewayConfig) {
       return { paid: false, status: 402, requirement, body: body(requirement, "Payment required") };
     }
 
+    // EIP-3009 gasless: settle the signed authorization on-chain, then verify the resulting tx.
+    let toVerify = proof;
+    let requireSig = config.requireSignature !== false;
+    if (proof.authorization) {
+      if (!config.settle) {
+        return {
+          paid: false,
+          status: 402,
+          requirement,
+          body: body(requirement, "Gasless (EIP-3009) payments are not enabled on this gateway"),
+        };
+      }
+      try {
+        const txHash = await config.settle(proof.authorization);
+        toVerify = { txHash };
+        requireSig = false; // the EIP-3009 authorization is itself the payer's signature
+      } catch {
+        return { paid: false, status: 402, requirement, body: body(requirement, "Settlement failed") };
+      }
+    }
+
     // Static mode: local replay pre-check. (Managed mode de-dups durably at commit.)
-    if (!config.apiKey && (await store.has(proof.txHash))) {
+    if (!config.apiKey && toVerify.txHash && (await store.has(toVerify.txHash))) {
       return { paid: false, status: 402, requirement, body: body(requirement, "Payment already used") };
     }
 
-    const result = await verifyPayment(requirement, proof, config.network, {
-      requireSignature: config.requireSignature !== false,
+    const result = await verifyPayment(requirement, toVerify, config.network, {
+      requireSignature: requireSig,
     });
     if (!result.ok) {
       return {
@@ -173,8 +200,8 @@ export function createPaymentGateway(config: GatewayConfig) {
       if (duplicate) {
         return { paid: false, status: 402, requirement, body: body(requirement, "Payment already used") };
       }
-    } else {
-      await store.add(proof.txHash);
+    } else if (toVerify.txHash) {
+      await store.add(toVerify.txHash);
     }
 
     return { paid: true, payment: result };

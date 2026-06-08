@@ -79,6 +79,14 @@ const fetch = createPaidFetch({ privateKey: process.env.AGENT_KEY, dailyLimitUsd
 await fetch("https://api.you.com/api/premium"); // any 402 is paid + retried automatically
 ```
 
+**Spend policy + budget.** Pre-authorize what an agent may pay — exact vendors, blocked sites,
+intent-based per-payment caps, a model allow-list, and a daily limit — all enforced before every
+payment via a `policy`. **Gasless (EIP-3009):** with `gasless: true` the agent signs a USDC
+authorization (no ETH) and the merchant gateway settles it on-chain.
+
+Agent owners get a dashboard at **`/wallet`** to create + fund an agent, set its policy, and
+export a ready-to-install **OpenClaw skill**.
+
 Or hand it to an LLM as a tool:
 
 ```ts
@@ -150,7 +158,8 @@ agentpay/
 
 ## Roadmap
 
-- EIP-3009 `transferWithAuthorization` (merchant-submitted settlement)
+- EIP-3009 gasless settlement — wired as opt-in (`gasless: true` + gateway `settle`); next: make it the default flow
+- On-chain spend-limit policy contract — non-bypassable vendor caps / allowances (the policy is enforced agent-side today)
 - Mainnet (Base, then more chains)
 - Persistent + multi-instance backends (Redis), hosted option
 - npm publish of `@agentpay/merchant-sdk`

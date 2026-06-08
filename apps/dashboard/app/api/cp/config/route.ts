@@ -1,4 +1,5 @@
 import { getProjectByApiKey } from "@/lib/cp/store";
+import { limited } from "@/lib/cp/ratelimit";
 
 export const runtime = "nodejs";
 
@@ -9,6 +10,8 @@ function bearer(req: Request): string | null {
 
 // The SDK (paymentGateway({ apiKey })) calls this to resolve a project's config.
 export async function GET(req: Request) {
+  const rl = limited(req, "config", 120);
+  if (rl) return rl;
   const key = bearer(req);
   if (!key) return Response.json({ error: "missing api key" }, { status: 401 });
 

@@ -1,6 +1,7 @@
 import { authContext } from "@/lib/cp/auth";
 import { getProjectById, updateProject, rotateProjectKey, deleteProject } from "@/lib/cp/store";
 import { validateAmount } from "@/lib/cp/validate";
+import { limited } from "@/lib/cp/ratelimit";
 
 export const runtime = "nodejs";
 
@@ -19,6 +20,8 @@ type Ctx = { params: Promise<{ id: string }> };
 
 // Edit name/amount/webhookUrl, or rotate the API key with { rotateKey: true }.
 export async function PATCH(req: Request, ctx: Ctx) {
+  const rl = limited(req, "projects-mutate", 30);
+  if (rl) return rl;
   const { id } = await ctx.params;
   const gate = await authorize(req, id);
   if ("error" in gate) return Response.json({ error: gate.error }, { status: gate.status });
@@ -44,6 +47,8 @@ export async function PATCH(req: Request, ctx: Ctx) {
 }
 
 export async function DELETE(req: Request, ctx: Ctx) {
+  const rl = limited(req, "projects-mutate", 30);
+  if (rl) return rl;
   const { id } = await ctx.params;
   const gate = await authorize(req, id);
   if ("error" in gate) return Response.json({ error: gate.error }, { status: gate.status });

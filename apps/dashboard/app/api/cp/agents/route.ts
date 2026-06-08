@@ -7,6 +7,7 @@ import {
   enrichAgentsWithSpend,
 } from "@/lib/cp/store";
 import { validatePayTo, validateDailyLimit } from "@/lib/cp/validate";
+import { limited } from "@/lib/cp/ratelimit";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
 export const runtime = "nodejs";
@@ -25,6 +26,8 @@ async function authorizeProject(req: Request, projectId: string) {
 // Register a paying agent under a project. If no address is given, a wallet is
 // generated and its private key is returned ONCE (fund it, then the agent pays).
 export async function POST(req: Request) {
+  const rl = limited(req, "agents-post", 30);
+  if (rl) return rl;
   const body = await req.json().catch(() => ({}));
   const projectId = body.projectId ? String(body.projectId) : "";
   if (!projectId) return Response.json({ error: "projectId is required" }, { status: 400 });

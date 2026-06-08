@@ -1,6 +1,7 @@
 import { getSession } from "@/lib/session";
 import { getProjectByApiKey, recordEvent, listEventsByOwner } from "@/lib/cp/store";
 import { fireWebhook } from "@/lib/cp/webhook";
+import { limited } from "@/lib/cp/ratelimit";
 
 export const runtime = "nodejs";
 
@@ -12,6 +13,8 @@ function bearer(req: Request): string | null {
 // The SDK posts an accepted payment here. recordEvent de-dups by (project, txHash) —
 // a duplicate is the durable replay signal the gateway uses to deny reuse.
 export async function POST(req: Request) {
+  const rl = limited(req, "events-post", 120);
+  if (rl) return rl;
   const key = bearer(req);
   if (!key) return Response.json({ error: "missing api key" }, { status: 401 });
 

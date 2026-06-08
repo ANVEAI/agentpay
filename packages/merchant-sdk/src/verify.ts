@@ -16,12 +16,20 @@ const TRANSFER = parseAbiItem("event Transfer(address indexed from, address inde
  * USDC to the requirement's `payTo` address. Reads the transaction receipt and
  * sums matching ERC-20 Transfer logs.
  */
+const TX_HASH_RE = /^0x[0-9a-fA-F]{64}$/;
+
 export interface VerifyOptions {
   /**
    * Reject payments whose transaction is older than this many seconds. Stops an agent
    * replaying an old, unrelated transfer as proof. Default 900. Set 0 to disable.
    */
   maxAgeSeconds?: number;
+  /**
+   * Require the tx to be at least this many blocks deep before accepting, so a chain
+   * reorg can't reverse a payment you've already honored. Default 1 (mined). Raise for
+   * high-value payments.
+   */
+  minConfirmations?: number;
 }
 
 export async function verifyPayment(
@@ -30,6 +38,10 @@ export async function verifyPayment(
   network: Network = baseSepolia,
   options: VerifyOptions = {},
 ): Promise<VerifyResult> {
+  if (!TX_HASH_RE.test(proof.txHash)) {
+    return { ok: false, reason: "invalid transaction hash", txHash: proof.txHash };
+  }
+
   const client = createPublicClient({ transport: http(network.rpcUrl) });
 
   const receipt = await client.getTransactionReceipt({ hash: proof.txHash }).catch(() => null);
@@ -40,11 +52,26 @@ export async function verifyPayment(
     return { ok: false, reason: "transaction reverted", txHash: proof.txHash };
   }
 
-  // Freshness: reject replays of old transfers (the requirement is short-lived).
+  const minConf = options.minConfirmations ?? 1;
   const maxAge = options.maxAgeSeconds ?? 900;
-  if (maxAge > 0) {
-    const block = await client.getBlock({ blockNumber: receipt.blockNumber }).catch(() => null);
-    if (block) {
+  if (minConf > 0 || maxAge > 0) {
+    const [latest, block] = await Promise.all([
+      client.getBlockNumber().catch(() => null),
+      client.getBlock({ blockNumber: receipt.blockNumber }).catch(() => null),
+    ]);
+    // Reorg safety: require enough confirmations before honoring the payment.
+    if (minConf > 0 && latest != null) {
+      const confs = Number(latest - receipt.blockNumber) + 1;
+      if (confs < minConf) {
+        return {
+          ok: false,
+          reason: `awaiting confirmations (${confs}/${minConf}) — retry shortly`,
+          txHash: proof.txHash,
+        };
+      }
+    }
+    // Freshness: reject replays of old transfers (the requirement is short-lived).
+    if (maxAge > 0 && block) {
       const age = Math.floor(Date.now() / 1000) - Number(block.timestamp);
       if (age > maxAge) {
         return {

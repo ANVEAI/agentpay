@@ -1,6 +1,7 @@
 import { authContext } from "@/lib/cp/auth";
 import { createProject, listProjectsByOwner, listAllProjects, type Project } from "@/lib/cp/store";
 import { validateName, validateAmount, validatePayTo } from "@/lib/cp/validate";
+import { limited } from "@/lib/cp/ratelimit";
 
 export const runtime = "nodejs";
 
@@ -19,6 +20,8 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const rl = limited(req, "projects-post", 30);
+  if (rl) return rl;
   const auth = await authContext(req);
   if (!auth) return Response.json({ error: "unauthorized" }, { status: 401 });
 

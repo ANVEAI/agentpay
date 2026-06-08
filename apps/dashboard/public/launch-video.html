@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AgentPay — launch reel</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0a0b0f;
+        --panel: #14161d;
+        --border: #262a36;
+        --text: #e8eaf0;
+        --muted: #8a90a2;
+        --accent: #6c7cff;
+        --accent2: #00d4a0;
+        --danger: #ff6b6b;
+        --sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+        --display: "Space Grotesk", var(--sans);
+        --mono: ui-monospace, "SF Mono", Menlo, monospace;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body {
+        height: 100%;
+        background: #000;
+        color: var(--text);
+        font-family: var(--sans);
+        overflow: hidden;
+        -webkit-font-smoothing: antialiased;
+      }
+      .viewport {
+        position: fixed;
+        inset: 0;
+        background: #000;
+      }
+      .stage {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1920px;
+        height: 1080px;
+        transform-origin: top left;
+        background: radial-gradient(1400px 800px at 72% -12%, #181c2b 0%, var(--bg) 58%);
+        overflow: hidden;
+        border-radius: 2px;
+      }
+      /* moving grid + glow */
+      .grid {
+        position: absolute;
+        inset: -2px;
+        background-image:
+          linear-gradient(rgba(108, 124, 255, 0.06) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(108, 124, 255, 0.06) 1px, transparent 1px);
+        background-size: 64px 64px;
+        animation: drift 24s linear infinite;
+        mask-image: radial-gradient(900px 600px at 50% 40%, #000 30%, transparent 78%);
+      }
+      @keyframes drift { to { background-position: 64px 64px; } }
+      .blob {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(80px);
+        opacity: 0.5;
+      }
+      .blob.a { width: 620px; height: 620px; left: -160px; top: -160px; background: rgba(108, 124, 255, 0.4); animation: float1 14s ease-in-out infinite; }
+      .blob.b { width: 520px; height: 520px; right: -120px; bottom: -140px; background: rgba(0, 212, 160, 0.22); animation: float2 17s ease-in-out infinite; }
+      @keyframes float1 { 50% { transform: translate(120px, 90px); } }
+      @keyframes float2 { 50% { transform: translate(-110px, -80px); } }
+
+      .scene {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 0 140px;
+        opacity: 0;
+        pointer-events: none;
+      }
+      .scene.play { opacity: 1; }
+
+      /* entrance primitives — animate only while the scene is playing */
+      .u { opacity: 0; transform: translateY(34px); filter: blur(6px); }
+      .scene.play .u { animation: rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+      .scene.play .u.d1 { animation-delay: 0.12s; }
+      .scene.play .u.d2 { animation-delay: 0.26s; }
+      .scene.play .u.d3 { animation-delay: 0.42s; }
+      .scene.play .u.d4 { animation-delay: 0.6s; }
+      .scene.play .u.d5 { animation-delay: 0.8s; }
+      .scene.play .u.d6 { animation-delay: 1s; }
+      @keyframes rise { to { opacity: 1; transform: none; filter: blur(0); } }
+
+      .pop { opacity: 0; transform: scale(0.82); }
+      .scene.play .pop { animation: pop 0.8s cubic-bezier(0.18, 1.3, 0.4, 1) forwards; }
+      @keyframes pop { to { opacity: 1; transform: none; } }
+
+      .eyebrow {
+        font-family: var(--display);
+        font-size: 22px;
+        letter-spacing: 0.32em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 30px;
+      }
+      h1 {
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: 104px;
+        line-height: 1.04;
+        letter-spacing: -0.025em;
+        background: linear-gradient(180deg, #fff, #b9c0d8);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        max-width: 1400px;
+      }
+      h1 .hl {
+        background: linear-gradient(180deg, #aeb8ff, var(--accent));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .sub {
+        font-size: 34px;
+        color: var(--muted);
+        margin-top: 34px;
+        max-width: 1100px;
+        line-height: 1.4;
+      }
+      .cursor {
+        display: inline-block;
+        width: 5px;
+        height: 0.9em;
+        margin-left: 8px;
+        background: var(--accent);
+        vertical-align: -10%;
+        animation: blink 1s steps(1) infinite;
+      }
+      @keyframes blink { 50% { opacity: 0; } }
+
+      .brandbig { display: flex; align-items: center; gap: 26px; }
+      .brandbig .logo { color: var(--accent); font-size: 96px; line-height: 1; filter: drop-shadow(0 0 26px rgba(108, 124, 255, 0.7)); }
+      .brandbig .name { font-family: var(--display); font-weight: 700; font-size: 96px; letter-spacing: -0.02em; }
+
+      /* code card */
+      .code {
+        font-family: var(--mono);
+        font-size: 34px;
+        line-height: 1.7;
+        text-align: left;
+        background: #0c0e15;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 40px 48px;
+        box-shadow: 0 40px 120px -30px rgba(108, 124, 255, 0.45);
+        color: #c9d1e3;
+      }
+      .code .k { color: #c4a6ff; }
+      .code .s { color: var(--accent2); }
+      .code .c { color: #5b6478; }
+      .code .hl { color: #fff; }
+
+      /* pipeline */
+      .pipe { display: flex; align-items: center; gap: 0; margin-top: 24px; }
+      .node {
+        font-family: var(--mono);
+        font-size: 27px;
+        padding: 22px 30px;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        background: var(--panel);
+        color: var(--muted);
+        white-space: nowrap;
+        opacity: 0;
+        transform: translateY(18px) scale(0.96);
+      }
+      .scene.play .node { animation: rise 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+      .node.lit { color: var(--text); }
+      .node.n402 { border-color: rgba(255, 107, 107, 0.5); color: #ffb4b4; box-shadow: 0 0 40px -8px rgba(255, 107, 107, 0.4); }
+      .node.n200 { border-color: rgba(0, 212, 160, 0.55); color: var(--accent2); box-shadow: 0 0 44px -6px rgba(0, 212, 160, 0.5); }
+      .node.npay { border-color: rgba(108, 124, 255, 0.6); color: #aeb8ff; box-shadow: 0 0 44px -6px rgba(108, 124, 255, 0.55); }
+      .conn { width: 74px; height: 2px; background: linear-gradient(90deg, var(--border), var(--accent)); position: relative; opacity: 0; }
+      .scene.play .conn { animation: grow 0.5s ease forwards; }
+      @keyframes grow { from { opacity: 0; transform: scaleX(0); } to { opacity: 1; transform: scaleX(1); } }
+      .scene.play .node:nth-of-type(1) { animation-delay: 0.1s; }
+      .scene.play .conn:nth-of-type(2) { animation-delay: 0.7s; }
+      .scene.play .node:nth-of-type(3) { animation-delay: 1.1s; }
+      .scene.play .conn:nth-of-type(4) { animation-delay: 1.7s; }
+      .scene.play .node:nth-of-type(5) { animation-delay: 2.1s; }
+      .scene.play .conn:nth-of-type(6) { animation-delay: 2.7s; }
+      .scene.play .node:nth-of-type(7) { animation-delay: 3.1s; }
+
+      /* policy panel */
+      .panel {
+        width: 980px;
+        background: linear-gradient(180deg, var(--panel), #1b1e27);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 14px 14px;
+        margin-top: 28px;
+        text-align: left;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        padding: 22px 26px;
+        font-size: 30px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        opacity: 0;
+        transform: translateX(-24px);
+      }
+      .row:last-child { border-bottom: none; }
+      .scene.play .row { animation: slidein 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+      .scene.play .row:nth-child(1) { animation-delay: 0.2s; }
+      .scene.play .row:nth-child(2) { animation-delay: 0.55s; }
+      .scene.play .row:nth-child(3) { animation-delay: 0.9s; }
+      .scene.play .row:nth-child(4) { animation-delay: 1.25s; }
+      .scene.play .row:nth-child(5) { animation-delay: 1.6s; }
+      @keyframes slidein { to { opacity: 1; transform: none; } }
+      .row .ic { width: 40px; height: 40px; border-radius: 9px; display: grid; place-items: center; font-size: 24px; font-weight: 700; flex: none; }
+      .row .ok { background: rgba(0, 212, 160, 0.14); color: var(--accent2); border: 1px solid rgba(0, 212, 160, 0.4); }
+      .row .no { background: rgba(255, 107, 107, 0.14); color: var(--danger); border: 1px solid rgba(255, 107, 107, 0.4); }
+      .row .cap { background: rgba(108, 124, 255, 0.14); color: #aeb8ff; border: 1px solid rgba(108, 124, 255, 0.4); }
+      .row b { font-weight: 600; }
+      .row .meta { color: var(--muted); margin-left: auto; font-family: var(--mono); font-size: 25px; }
+
+      /* value props */
+      .props { display: flex; flex-wrap: wrap; gap: 20px 22px; justify-content: center; max-width: 1500px; }
+      .prop {
+        font-family: var(--display);
+        font-weight: 500;
+        font-size: 48px;
+        padding: 18px 32px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.02);
+        opacity: 0;
+        transform: translateY(26px) scale(0.9);
+      }
+      .scene.play .prop { animation: pop 0.6s cubic-bezier(0.18, 1.3, 0.4, 1) forwards; }
+      .prop .dot { color: var(--accent); }
+      .scene.play .prop:nth-child(1) { animation-delay: 0.1s; }
+      .scene.play .prop:nth-child(2) { animation-delay: 0.5s; }
+      .scene.play .prop:nth-child(3) { animation-delay: 0.9s; }
+      .scene.play .prop:nth-child(4) { animation-delay: 1.3s; }
+      .scene.play .prop:nth-child(5) { animation-delay: 1.7s; }
+      .scene.play .prop:nth-child(6) { animation-delay: 2.1s; }
+
+      /* CTA */
+      .cta .logo { color: var(--accent); font-size: 120px; filter: drop-shadow(0 0 34px rgba(108, 124, 255, 0.8)); }
+      .cta .repo {
+        font-family: var(--mono);
+        font-size: 38px;
+        color: var(--text);
+        margin-top: 26px;
+        padding: 16px 30px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: rgba(108, 124, 255, 0.07);
+      }
+      .star {
+        margin-top: 30px;
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: 40px;
+        color: #ffd54a;
+      }
+      .glowpulse { animation: glow 2.4s ease-in-out infinite; }
+      @keyframes glow { 50% { filter: drop-shadow(0 0 50px rgba(108, 124, 255, 1)); } }
+
+      /* progress + controls */
+      .bar { position: absolute; left: 0; bottom: 0; height: 5px; width: 0; background: linear-gradient(90deg, var(--accent), var(--accent2)); box-shadow: 0 0 18px var(--accent); }
+      .controls {
+        position: fixed;
+        bottom: 18px;
+        right: 18px;
+        display: flex;
+        gap: 10px;
+        z-index: 10;
+        font-family: var(--sans);
+      }
+      .controls button {
+        background: rgba(20, 22, 29, 0.9);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 10px 16px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        backdrop-filter: blur(8px);
+      }
+      .controls button:hover { border-color: var(--accent); }
+      .hint {
+        position: fixed;
+        bottom: 22px;
+        left: 18px;
+        color: var(--muted);
+        font-size: 13px;
+        z-index: 10;
+      }
+      .badge {
+        font-family: var(--display);
+        font-size: 22px;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 8px 18px;
+        text-transform: uppercase;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="viewport">
+      <div class="stage" id="stage">
+        <div class="grid"></div>
+        <div class="blob a"></div>
+        <div class="blob b"></div>
+
+        <!-- 1 cold open -->
+        <section class="scene" data-dur="4500">
+          <div class="eyebrow u">2026 · the agent economy</div>
+          <h1 class="u d1">Your AI agent<br /><span class="hl">wants to buy something.</span><span class="cursor"></span></h1>
+        </section>
+
+        <!-- 2 problem -->
+        <section class="scene" data-dur="5000">
+          <h1 class="u">An API. Some data.<br />Compute. An action.</h1>
+          <div class="sub u d3">There's still no clean way to <b>charge an agent</b> for it.</div>
+        </section>
+
+        <!-- 3 brand reveal -->
+        <section class="scene" data-dur="4200">
+          <div class="brandbig pop"><span class="logo">◢</span><span class="name">AgentPay</span></div>
+          <div class="sub u d3">The drop-in payment rail for AI agents.</div>
+        </section>
+
+        <!-- 4 one line -->
+        <section class="scene" data-dur="7000">
+          <div class="eyebrow u">one line of code</div>
+          <div class="code u d1">
+            <div><span class="c">// gate any route behind an agent payment</span></div>
+            <div><span class="k">import</span> { paymentGateway } <span class="k">from</span> <span class="s">"@agentpay/merchant-sdk/express"</span>;</div>
+            <div>&nbsp;</div>
+            <div>app.<span class="k">use</span>(<span class="s">"/api/premium"</span>, <span class="hl">paymentGateway({ payTo, amount })</span>);</div>
+          </div>
+          <div class="sub u d4">That's the whole integration.</div>
+        </section>
+
+        <!-- 5 flow -->
+        <section class="scene" data-dur="8500">
+          <h1 class="u" style="font-size: 76px">402 → pay → 200</h1>
+          <div class="pipe">
+            <div class="node lit">GET /api/premium</div>
+            <div class="conn"></div>
+            <div class="node n402">402 Payment Required</div>
+            <div class="conn"></div>
+            <div class="node npay">pays USDC ◎</div>
+            <div class="conn"></div>
+            <div class="node n200">200 OK ✓</div>
+          </div>
+          <div class="sub u d6">Non-custodial. The money lands straight in your wallet.</div>
+        </section>
+
+        <!-- 6 policy -->
+        <section class="scene" data-dur="8200">
+          <div class="eyebrow u">you decide what it can pay</div>
+          <div class="panel">
+            <div class="row"><span class="ic ok">✓</span><b>Allowed vendors</b><span class="meta">api.openai.com</span></div>
+            <div class="row"><span class="ic no">✕</span><b>Blocked sites</b><span class="meta">refused on-sight</span></div>
+            <div class="row"><span class="ic cap">≤</span><b>Intent caps</b><span class="meta">data · max 2 USDC</span></div>
+            <div class="row"><span class="ic cap">◆</span><b>Authorized models</b><span class="meta">claude · gpt-5</span></div>
+            <div class="row"><span class="ic ok">$</span><b>Daily budget</b><span class="meta">10 USDC / day</span></div>
+          </div>
+        </section>
+
+        <!-- 7 value props -->
+        <section class="scene" data-dur="8000">
+          <div class="props">
+            <div class="prop"><span class="dot">●</span> Non-custodial</div>
+            <div class="prop"><span class="dot">●</span> x402-compatible</div>
+            <div class="prop"><span class="dot">●</span> USDC on Base</div>
+            <div class="prop"><span class="dot">●</span> Gasless · EIP-3009</div>
+            <div class="prop"><span class="dot">●</span> Your keys</div>
+            <div class="prop"><span class="dot">●</span> Open source</div>
+          </div>
+        </section>
+
+        <!-- 8 statement -->
+        <section class="scene" data-dur="4800">
+          <h1 class="u">Stripe for AI agents.<br /><span class="hl">Open source.</span></h1>
+        </section>
+
+        <!-- 9 CTA -->
+        <section class="scene" data-dur="9000">
+          <div class="cta" style="display:flex;flex-direction:column;align-items:center">
+            <div class="brandbig pop"><span class="logo glowpulse">◢</span><span class="name">AgentPay</span></div>
+            <div class="repo u d2">github.com/ANVEAI/agentpay</div>
+            <div class="star u d4">★ Star it — built in the open</div>
+          </div>
+        </section>
+
+        <div class="bar" id="bar"></div>
+      </div>
+    </div>
+
+    <div class="hint">Press <b>F</b> for fullscreen, then screen-record. Total ≈ 60s.</div>
+    <div class="controls">
+      <button id="replay">↻ Replay</button>
+      <button id="fs">⛶ Fullscreen</button>
+    </div>
+
+    <script>
+      const stage = document.getElementById("stage");
+      const scenes = [...document.querySelectorAll(".scene")];
+      const bar = document.getElementById("bar");
+      const total = scenes.reduce((s, el) => s + +el.dataset.dur, 0);
+
+      function fit() {
+        const s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+        const x = (window.innerWidth - 1920 * s) / 2;
+        const y = (window.innerHeight - 1080 * s) / 2;
+        stage.style.transform = "translate(" + x + "px," + y + "px) scale(" + s + ")";
+      }
+      window.addEventListener("resize", fit);
+      fit();
+
+      let timers = [];
+      function clearTimers() { timers.forEach(clearTimeout); timers = []; }
+
+      function play() {
+        clearTimers();
+        scenes.forEach((s) => s.classList.remove("play"));
+        bar.style.transition = "none";
+        bar.style.width = "0";
+        let acc = 0;
+        scenes.forEach((scene) => {
+          const dur = +scene.dataset.dur;
+          timers.push(
+            setTimeout(() => {
+              scenes.forEach((s) => s.classList.remove("play"));
+              scene.classList.add("play");
+            }, acc),
+          );
+          acc += dur;
+        });
+        // progress bar fills across the whole timeline
+        requestAnimationFrame(() => {
+          bar.style.transition = "width " + total + "ms linear";
+          bar.style.width = "100%";
+        });
+        // loop
+        timers.push(setTimeout(play, total + 400));
+      }
+
+      document.getElementById("replay").onclick = play;
+      document.getElementById("fs").onclick = () => {
+        if (document.fullscreenElement) document.exitFullscreen();
+        else document.documentElement.requestFullscreen();
+      };
+      window.addEventListener("keydown", (e) => {
+        if (e.key.toLowerCase() === "f") document.getElementById("fs").onclick();
+        if (e.key.toLowerCase() === "r") play();
+      });
+
+      play();
+    </script>
+  </body>
+</html>

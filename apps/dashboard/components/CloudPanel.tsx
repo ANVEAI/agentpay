@@ -29,6 +29,8 @@ interface Agent {
   label: string;
   address: string;
   dailyLimit: string;
+  spentToday?: number;
+  remaining?: number | null;
   createdAt: string;
 }
 
@@ -150,6 +152,7 @@ export function CloudPanel() {
               <th>Price</th>
               <th>payTo</th>
               <th>Key</th>
+              <th>Payment link</th>
             </tr>
           </thead>
           <tbody>
@@ -159,6 +162,18 @@ export function CloudPanel() {
                 <td>{p.amount} USDC</td>
                 <td>{short(p.payTo)}</td>
                 <td>{p.keyPrefix}…</td>
+                <td>
+                  <a href={`/pay/${p.id}`} target="_blank" rel="noreferrer">
+                    open
+                  </a>{" "}
+                  <button
+                    type="button"
+                    className="btn ghost sm"
+                    onClick={() => copy(`${origin}/pay/${p.id}`, `link-${p.id}`)}
+                  >
+                    {copied === `link-${p.id}` ? "Copied ✓" : "Copy"}
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -177,6 +192,8 @@ export function CloudPanel() {
               <th>Label</th>
               <th>Address</th>
               <th>Daily limit</th>
+              <th>Spent today</th>
+              <th>Remaining</th>
             </tr>
           </thead>
           <tbody>
@@ -185,6 +202,8 @@ export function CloudPanel() {
                 <td>{a.label}</td>
                 <td>{short(a.address)}</td>
                 <td>{a.dailyLimit ? `${a.dailyLimit} USDC` : "—"}</td>
+                <td>{a.spentToday != null ? `${a.spentToday} USDC` : "—"}</td>
+                <td>{a.remaining != null ? `${a.remaining} USDC` : "—"}</td>
               </tr>
             ))}
           </tbody>

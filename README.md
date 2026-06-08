@@ -134,6 +134,9 @@ Managed mode and subscriptions:
 It opens the visitor's wallet, sends USDC to your address, and fires an
 `agentpay:success` event with the tx hash. Live demo at `/button-demo.html`.
 
+Or share a hosted **payment link** — every project has a checkout page at
+`/pay/<projectId>` (copy it from the dashboard's Projects table).
+
 ## Watch the money: the dashboard
 
 Run the dashboard (`pnpm dev`), connect the same wallet you set as `payTo`, sign in

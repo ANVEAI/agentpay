@@ -113,6 +113,12 @@ pnpm agentpay add-agent --project <id> --label research-bot --budget 10`}</div>
         </a>
       </p>
 
+      <h2>Payment links</h2>
+      <p>
+        Every project also has a hosted checkout at <code>/pay/&lt;projectId&gt;</code> — link to it
+        from your site or share it directly. Copy the link from the Projects table on the dashboard.
+      </p>
+
       <footer className="foot">Base Sepolia · USDC · x402-compatible · open source</footer>
     </main>
   );

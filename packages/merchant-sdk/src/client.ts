@@ -46,34 +46,63 @@ export async function payRequirement(
 export interface PaidFetchOptions extends AgentWalletOptions {
   fetchImpl?: typeof fetch;
   paymentHeader?: string;
+  /**
+   * Optional spend cap in USDC per UTC day, enforced in-process. Once reached, a 402 is
+   * returned unpaid instead of paying over budget. (Persistent caps: back it with the
+   * control plane's per-agent spend.)
+   */
+  dailyLimitUsdc?: number;
 }
 
 /**
  * A drop-in `fetch` that transparently pays x402 402s and retries with proof.
  * Hand this to any agent tool that uses fetch and payments happen autonomously.
+ * With `dailyLimitUsdc`, it stops paying once the per-day cap is reached.
  *
- *   const fetch = createPaidFetch({ privateKey });
- *   await fetch("https://api.site.com/premium");   // 402 auto-paid
+ *   const fetch = createPaidFetch({ privateKey, dailyLimitUsdc: 10 });
+ *   await fetch("https://api.site.com/premium");   // 402 auto-paid, up to $10/day
  */
 export function createPaidFetch(opts: PaidFetchOptions): typeof fetch {
   const doFetch = opts.fetchImpl ?? fetch;
   const header = opts.paymentHeader ?? "x-payment";
+  let spentUsdc = 0;
+  let day = new Date().toISOString().slice(0, 10);
+
+  const payAndRetry = async (
+    input: Parameters<typeof fetch>[0],
+    init: RequestInit | undefined,
+    requirement: PaymentRequirement,
+  ): Promise<Response> => {
+    const hash = await payRequirement(requirement, opts);
+    const headers = new Headers(init?.headers);
+    headers.set(header, hash);
+    return doFetch(input, { ...init, headers });
+  };
 
   const paid = async (input: Parameters<typeof fetch>[0], init?: RequestInit): Promise<Response> => {
     const res = await doFetch(input, init);
     if (res.status !== 402) return res;
 
-    const body = await res
-      .clone()
-      .json()
-      .catch(() => null);
+    const body = await res.clone().json().catch(() => null);
     const requirement = extractPaymentRequirement(body);
     if (!requirement) return res; // unparseable 402 — hand it back untouched
 
-    const hash = await payRequirement(requirement, opts);
-    const headers = new Headers(init?.headers);
-    headers.set(header, hash);
-    return doFetch(input, { ...init, headers });
+    if (opts.dailyLimitUsdc != null) {
+      const today = new Date().toISOString().slice(0, 10);
+      if (today !== day) {
+        day = today;
+        spentUsdc = 0;
+      }
+      const amount = Number(requirement.maxAmountRequired) / 10 ** requirement.assetDecimals;
+      if (spentUsdc + amount > opts.dailyLimitUsdc) {
+        return res; // daily budget exceeded — do not pay
+      }
+      const out = await payAndRetry(input, init, requirement);
+      spentUsdc += amount;
+      return out;
+    }
+
+    return payAndRetry(input, init, requirement);
   };
 
   return paid as typeof fetch;

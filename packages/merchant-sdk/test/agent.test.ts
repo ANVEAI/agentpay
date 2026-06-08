@@ -47,6 +47,21 @@ describe("createPaidFetch", () => {
     expect(res.status).toBe(402);
     expect(impl).toHaveBeenCalledTimes(1);
   });
+
+  it("does not pay once the daily budget would be exceeded", async () => {
+    const body = JSON.stringify({
+      accepts: [{ ...REQUIREMENT, maxAmountRequired: "600000", amountFormatted: "0.6" }],
+    });
+    const impl = vi.fn(async () => new Response(body, { status: 402 }));
+    const f = createPaidFetch({
+      privateKey: "0x00",
+      dailyLimitUsdc: 0.5,
+      fetchImpl: impl as unknown as typeof fetch,
+    });
+    const res = await f("https://x.test");
+    expect(res.status).toBe(402); // 0.6 > 0.5 cap → not paid
+    expect(impl).toHaveBeenCalledTimes(1); // never retried, no on-chain attempt
+  });
 });
 
 describe("agentPaymentTool", () => {

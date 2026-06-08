@@ -170,3 +170,27 @@ export async function listAgentsByOwner(owner: string): Promise<Agent[]> {
   );
   return db.agents.filter((a) => ids.has(a.projectId));
 }
+
+export interface AgentWithSpend extends Agent {
+  spentToday: number; // USDC spent today by this agent's wallet
+  remaining: number | null; // dailyLimit - spentToday, or null if unlimited
+}
+
+// Attach today's spend (from recorded payment events) and remaining budget per agent.
+export async function enrichAgentsWithSpend(agents: Agent[]): Promise<AgentWithSpend[]> {
+  const db = await read();
+  const today = new Date().toISOString().slice(0, 10);
+  return agents.map((a) => {
+    const base = db.events
+      .filter(
+        (e) =>
+          e.projectId === a.projectId &&
+          e.from.toLowerCase() === a.address.toLowerCase() &&
+          (e.at || "").slice(0, 10) === today,
+      )
+      .reduce((sum, e) => sum + BigInt(e.amount || "0"), 0n);
+    const spentToday = Number(base) / 1e6;
+    const limit = a.dailyLimit ? Number(a.dailyLimit) : null;
+    return { ...a, spentToday, remaining: limit != null ? Math.max(0, limit - spentToday) : null };
+  });
+}

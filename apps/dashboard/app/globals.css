@@ -281,6 +281,35 @@ a:hover {
   font-size: 12px;
 }
 
+.pay {
+  text-align: center;
+  max-width: 420px;
+  margin: 64px auto;
+  padding: 36px 32px;
+}
+.pay .label {
+  justify-content: center;
+}
+.pay-amount {
+  font-size: 42px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 10px 0 2px;
+}
+.pay-amount .unit {
+  font-size: 18px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.pay agentpay-button {
+  display: inline-block;
+  margin: 18px 0 4px;
+}
+.small {
+  font-size: 12px;
+  margin-top: 16px;
+}
+
 .nav {
   display: flex;
   align-items: center;

@@ -1,5 +1,11 @@
 import { authContext } from "@/lib/cp/auth";
-import { createAgent, listAgentsByProject, listAgentsByOwner, getProjectById } from "@/lib/cp/store";
+import {
+  createAgent,
+  listAgentsByProject,
+  listAgentsByOwner,
+  getProjectById,
+  enrichAgentsWithSpend,
+} from "@/lib/cp/store";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
 export const runtime = "nodejs";
@@ -47,11 +53,13 @@ export async function GET(req: Request) {
   if (projectId) {
     const gate = await authorizeProject(req, projectId);
     if ("error" in gate) return Response.json({ error: gate.error }, { status: gate.status });
-    return Response.json({ agents: await listAgentsByProject(projectId) });
+    return Response.json({ agents: await enrichAgentsWithSpend(await listAgentsByProject(projectId)) });
   }
   // no projectId: list all of the signed-in merchant's agents (dashboard view)
   const auth = await authContext(req);
   if (!auth) return Response.json({ error: "unauthorized" }, { status: 401 });
-  if (auth.kind === "session") return Response.json({ agents: await listAgentsByOwner(auth.owner) });
+  if (auth.kind === "session") {
+    return Response.json({ agents: await enrichAgentsWithSpend(await listAgentsByOwner(auth.owner)) });
+  }
   return Response.json({ error: "projectId is required for admin token" }, { status: 400 });
 }

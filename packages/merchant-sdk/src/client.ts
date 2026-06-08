@@ -3,6 +3,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia as viemBaseSepolia } from "viem/chains";
 import type { Hex, Network, PaymentRequirement } from "./types";
 import { baseSepolia } from "./chains";
+import { paymentMessage, encodeProof } from "./proof";
 
 export interface AgentWalletOptions {
   /** Agent wallet private key (0x-prefixed). Keep this in env, never in client code. */
@@ -74,8 +75,13 @@ export function createPaidFetch(opts: PaidFetchOptions): typeof fetch {
     requirement: PaymentRequirement,
   ): Promise<Response> => {
     const hash = await payRequirement(requirement, opts);
+    // Sign the proof with the paying wallet so the merchant can bind it to the payer.
+    const account = privateKeyToAccount(opts.privateKey);
+    const signature = await account.signMessage({
+      message: paymentMessage(requirement.payTo, requirement.maxAmountRequired, hash),
+    });
     const headers = new Headers(init?.headers);
-    headers.set(header, hash);
+    headers.set(header, encodeProof({ txHash: hash, signer: account.address, signature }));
     return doFetch(input, { ...init, headers });
   };
 

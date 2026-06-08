@@ -46,10 +46,11 @@ describe("gateway — static mode", () => {
   });
 
   it("blocks a replayed tx without touching the chain", async () => {
+    const USED = "0x" + "c".repeat(64);
     const store = memoryStore();
-    await store.add("0xused");
+    await store.add(USED);
     const gw = createPaymentGateway({ payTo: "0xMerchant", amount: 0.1, store });
-    const r = await gw.check({ resource: "/x", paymentTxHash: "0xused" });
+    const r = await gw.check({ resource: "/x", payment: USED });
     expect(r.paid).toBe(false);
     if (!r.paid) expect(r.body.error).toMatch(/already used/i);
   });

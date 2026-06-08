@@ -9,14 +9,14 @@ export function createWebGateway(config: GatewayConfig) {
   const gw = createPaymentGateway(config);
   return {
     async guard(request: Request): Promise<Response | null> {
-      const txHash = request.headers.get(gw.paymentHeader);
+      const value = request.headers.get(gw.paymentHeader);
       let resource = "/";
       try {
         resource = new URL(request.url).pathname;
       } catch {
         // non-absolute URL; keep default
       }
-      const result = await gw.check({ resource, paymentTxHash: txHash });
+      const result = await gw.check({ resource, payment: value });
       if (result.paid) return null;
       return Response.json(result.body, { status: 402 });
     },

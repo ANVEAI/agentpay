@@ -26,10 +26,10 @@ export function paymentGateway(config: GatewayConfig) {
   return async function agentpayMiddleware(req: ReqLike, res: ResLike, next: NextLike) {
     try {
       const raw = req.headers[gw.paymentHeader];
-      const txHash = Array.isArray(raw) ? raw[0] : raw;
+      const value = Array.isArray(raw) ? raw[0] : raw;
       const result = await gw.check({
         resource: (req.originalUrl as string) ?? (req.url as string),
-        paymentTxHash: txHash ?? null,
+        payment: value ?? null,
       });
       if (result.paid) {
         (req as Record<string, unknown>).agentpay = result.payment;

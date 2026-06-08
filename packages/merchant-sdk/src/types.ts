@@ -45,12 +45,16 @@ export interface PaymentRequirement {
 }
 
 /**
- * Proof an agent submits that it paid.
- * MVP: a transaction hash. The full x402 scheme uses a signed `X-PAYMENT`
- * payload verified by a facilitator; this verifies the settled transfer directly.
+ * Proof an agent submits that it paid: the settlement tx hash, plus an optional
+ * signature from the paying wallet that binds the proof to the payer (closes the
+ * "someone replays a known tx hash" gap). The gateway can require the signature.
  */
 export interface PaymentProof {
   txHash: Hex;
+  /** Wallet that signed this proof — must equal the on-chain payer. */
+  signer?: Address;
+  /** Signature over paymentMessage(payTo, amount, txHash). */
+  signature?: Hex;
 }
 
 export interface VerifyResult {

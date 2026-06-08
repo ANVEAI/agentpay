@@ -1,6 +1,7 @@
-import type { Address, Hex, Network, PaymentRequirement, VerifyResult } from "./types";
+import type { Address, Network, PaymentRequirement, VerifyResult } from "./types";
 import { createPaymentRequirement } from "./requirement";
 import { verifyPayment } from "./verify";
+import { decodeProof } from "./proof";
 import { memoryStore, type PaymentStore } from "./store";
 
 export const X402_VERSION = 1;
@@ -25,6 +26,11 @@ export interface GatewayConfig {
   paymentHeader?: string;
   /** Replay guard. Default in-memory. */
   store?: PaymentStore;
+  /**
+   * Require a signed payment proof (signer == on-chain payer). Default true — set false
+   * only to accept legacy unsigned tx-hash proofs.
+   */
+  requireSignature?: boolean;
 }
 
 export interface X402Body {
@@ -135,22 +141,24 @@ export function createPaymentGateway(config: GatewayConfig) {
 
   async function check(opts: {
     resource?: string;
-    paymentTxHash?: string | null;
+    payment?: string | null;
   }): Promise<GatewayResult> {
     const resolved = await resolve();
     const requirement = build(resolved, opts.resource);
-    const tx = opts.paymentTxHash?.trim();
+    const proof = decodeProof(opts.payment ?? null);
 
-    if (!tx) {
+    if (!proof) {
       return { paid: false, status: 402, requirement, body: body(requirement, "Payment required") };
     }
 
     // Static mode: local replay pre-check. (Managed mode de-dups durably at commit.)
-    if (!config.apiKey && (await store.has(tx))) {
+    if (!config.apiKey && (await store.has(proof.txHash))) {
       return { paid: false, status: 402, requirement, body: body(requirement, "Payment already used") };
     }
 
-    const result = await verifyPayment(requirement, { txHash: tx as Hex }, config.network);
+    const result = await verifyPayment(requirement, proof, config.network, {
+      requireSignature: config.requireSignature !== false,
+    });
     if (!result.ok) {
       return {
         paid: false,
@@ -166,7 +174,7 @@ export function createPaymentGateway(config: GatewayConfig) {
         return { paid: false, status: 402, requirement, body: body(requirement, "Payment already used") };
       }
     } else {
-      await store.add(tx);
+      await store.add(proof.txHash);
     }
 
     return { paid: true, payment: result };

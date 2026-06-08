@@ -67,7 +67,12 @@ console.log("    explorer: https://sepolia.basescan.org/tx/" + hash);
 await pub.waitForTransactionReceipt({ hash });
 console.log("    settled ✓");
 
-console.log("\n[3] retry with payment proof");
-const r2 = await fetch(TARGET, { headers: { "x-payment": hash } });
+console.log("\n[3] sign proof + retry");
+const message = `agentpay-payment:v1:${req.payTo.toLowerCase()}:${req.maxAmountRequired}:${hash.toLowerCase()}`;
+const signature = await account.signMessage({ message });
+const xPayment = Buffer.from(
+  JSON.stringify({ txHash: hash, signer: account.address, signature }),
+).toString("base64");
+const r2 = await fetch(TARGET, { headers: { "x-payment": xPayment } });
 console.log("    →", r2.status, await r2.text());
-console.log("\n✅ loop closed: 402 → pay → 200");
+console.log("\n✅ loop closed: 402 → pay → sign → 200");

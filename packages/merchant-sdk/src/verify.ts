@@ -5,9 +5,11 @@ import {
   decodeEventLog,
   formatUnits,
   getAddress,
+  verifyMessage,
 } from "viem";
 import type { Address, Network, PaymentProof, PaymentRequirement, VerifyResult } from "./types";
 import { baseSepolia } from "./chains";
+import { paymentMessage } from "./proof";
 
 const TRANSFER = parseAbiItem("event Transfer(address indexed from, address indexed to, uint256 value)");
 
@@ -30,6 +32,11 @@ export interface VerifyOptions {
    * high-value payments.
    */
   minConfirmations?: number;
+  /**
+   * Require a signed proof whose signer equals the on-chain payer. Binds the proof to
+   * the paying wallet so a leaked tx hash can't be replayed by a third party.
+   */
+  requireSignature?: boolean;
 }
 
 export async function verifyPayment(
@@ -111,6 +118,25 @@ export async function verifyPayment(
       from,
       txHash: proof.txHash,
     };
+  }
+
+  // Signature binding: prove the submitter controls the wallet that actually paid.
+  if (options.requireSignature || proof.signature || proof.signer) {
+    if (!proof.signature || !proof.signer) {
+      return { ok: false, reason: "payment proof is not signed", paid: total.toString(), from, txHash: proof.txHash };
+    }
+    const message = paymentMessage(requirement.payTo, requirement.maxAmountRequired, proof.txHash);
+    const validSig = await verifyMessage({
+      address: proof.signer,
+      message,
+      signature: proof.signature,
+    }).catch(() => false);
+    if (!validSig) {
+      return { ok: false, reason: "invalid payment signature", paid: total.toString(), from, txHash: proof.txHash };
+    }
+    if (!from || from.toLowerCase() !== proof.signer.toLowerCase()) {
+      return { ok: false, reason: "proof signer is not the payer", paid: total.toString(), from, txHash: proof.txHash };
+    }
   }
 
   return { ok: true, paid: total.toString(), from, txHash: proof.txHash };

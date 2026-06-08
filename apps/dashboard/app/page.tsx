@@ -11,6 +11,7 @@ export default function Page() {
         </div>
         <div className="nav">
           <a href="/docs">Docs</a>
+          <a href="/wallet">Agent wallet</a>
           <Account />
         </div>
       </header>

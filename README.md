@@ -29,6 +29,8 @@ It's not a new rail. It rides the open **x402** standard and settles in **USDC**
 npm i @agentpay/merchant-sdk
 ```
 
+> **Pre-release:** the npm package is publishing shortly. Until then, clone this repo and run `pnpm build:sdk` — the SDK lives in [`packages/merchant-sdk`](packages/merchant-sdk).
+
 ```ts
 // Gate any route behind an agent payment. That's the whole integration.
 import { paymentGateway } from "@agentpay/merchant-sdk/express";

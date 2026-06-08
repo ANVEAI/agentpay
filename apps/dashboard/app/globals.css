@@ -21,7 +21,7 @@ body {
   padding: 0;
   background: radial-gradient(1200px 600px at 70% -10%, #171a26 0%, var(--bg) 55%);
   color: var(--text);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial,
+  font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
     sans-serif;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
@@ -33,6 +33,14 @@ a {
 }
 a:hover {
   text-decoration: underline;
+}
+
+/* Deliberate display typeface for brand, headings, and big numerals. */
+.brand,
+.hero h1,
+.pay-amount,
+.big {
+  font-family: var(--font-display), var(--font-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
 .container {
@@ -289,6 +297,25 @@ a:hover {
 }
 .actions .btn.sm {
   margin-right: 4px;
+}
+
+@media (max-width: 600px) {
+  .container {
+    padding: 20px 16px 56px;
+  }
+  .topbar {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .hero h1 {
+    font-size: 28px;
+  }
+  /* Wide control-plane tables scroll within their card instead of breaking the page. */
+  .tbl {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
 }
 
 .pay {

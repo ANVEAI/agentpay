@@ -8,7 +8,7 @@ import { short } from "@/lib/format";
 
 export function Account() {
   const { address, isConnected, chainId } = useAccount();
-  const { connect, connectors, isPending } = useConnect();
+  const { connectAsync, connectors, isPending } = useConnect();
   const { disconnect } = useDisconnect();
   const { signMessageAsync } = useSignMessage();
 
@@ -23,19 +23,20 @@ export function Account() {
       .catch(() => {});
   }, []);
 
-  async function signIn() {
-    if (!address) return;
+  async function signIn(addr?: string, cid?: number) {
+    const useAddr = addr ?? address;
+    if (!useAddr) return;
     setBusy(true);
     setError(null);
     try {
       const nonce = await fetch("/api/auth/nonce").then((r) => r.text());
       const message = new SiweMessage({
         domain: window.location.host,
-        address,
+        address: useAddr,
         statement: "Sign in to the AgentPay merchant dashboard.",
         uri: window.location.origin,
         version: "1",
-        chainId: chainId ?? baseSepolia.id,
+        chainId: cid ?? chainId ?? baseSepolia.id,
         nonce,
       }).prepareMessage();
 
@@ -55,6 +56,19 @@ export function Account() {
     }
   }
 
+  // One click: connect the wallet, then sign in — no connect-then-find-a-second-button.
+  async function connectAndSignIn() {
+    const connector = connectors[0];
+    if (!connector) return;
+    setError(null);
+    try {
+      const res = await connectAsync({ connector });
+      await signIn(res.accounts[0], res.chainId);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
   async function signOut() {
     await fetch("/api/auth/logout", { method: "POST" });
     setAuthed(null);
@@ -63,12 +77,8 @@ export function Account() {
   if (!isConnected) {
     const connector = connectors[0];
     return (
-      <button
-        className="btn"
-        disabled={isPending || !connector}
-        onClick={() => connector && connect({ connector })}
-      >
-        {isPending ? "Connecting…" : "Connect MetaMask"}
+      <button className="btn" disabled={isPending || busy || !connector} onClick={connectAndSignIn}>
+        {isPending || busy ? "Connecting…" : "Connect MetaMask"}
       </button>
     );
   }
@@ -88,7 +98,7 @@ export function Account() {
           </button>
         </>
       ) : (
-        <button className="btn" disabled={busy} onClick={signIn}>
+        <button className="btn" disabled={busy} onClick={() => signIn()}>
           {busy ? "Check MetaMask…" : "Sign in with Ethereum"}
         </button>
       )}

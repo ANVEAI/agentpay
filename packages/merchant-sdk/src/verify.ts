@@ -16,10 +16,19 @@ const TRANSFER = parseAbiItem("event Transfer(address indexed from, address inde
  * USDC to the requirement's `payTo` address. Reads the transaction receipt and
  * sums matching ERC-20 Transfer logs.
  */
+export interface VerifyOptions {
+  /**
+   * Reject payments whose transaction is older than this many seconds. Stops an agent
+   * replaying an old, unrelated transfer as proof. Default 900. Set 0 to disable.
+   */
+  maxAgeSeconds?: number;
+}
+
 export async function verifyPayment(
   requirement: PaymentRequirement,
   proof: PaymentProof,
   network: Network = baseSepolia,
+  options: VerifyOptions = {},
 ): Promise<VerifyResult> {
   const client = createPublicClient({ transport: http(network.rpcUrl) });
 
@@ -29,6 +38,22 @@ export async function verifyPayment(
   }
   if (receipt.status !== "success") {
     return { ok: false, reason: "transaction reverted", txHash: proof.txHash };
+  }
+
+  // Freshness: reject replays of old transfers (the requirement is short-lived).
+  const maxAge = options.maxAgeSeconds ?? 900;
+  if (maxAge > 0) {
+    const block = await client.getBlock({ blockNumber: receipt.blockNumber }).catch(() => null);
+    if (block) {
+      const age = Math.floor(Date.now() / 1000) - Number(block.timestamp);
+      if (age > maxAge) {
+        return {
+          ok: false,
+          reason: `payment is stale (${age}s old, max ${maxAge}s) — a fresh payment is required`,
+          txHash: proof.txHash,
+        };
+      }
+    }
   }
 
   const usdc = network.usdcAddress.toLowerCase();

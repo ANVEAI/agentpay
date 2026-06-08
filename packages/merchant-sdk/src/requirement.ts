@@ -25,6 +25,7 @@ export function createPaymentRequirement(params: CreateRequirementParams): Payme
   const amountStr = typeof params.amount === "number" ? String(params.amount) : params.amount;
   const base = parseUnits(amountStr, network.usdcDecimals);
   const ttl = params.ttlSeconds ?? 600;
+  const now = Math.floor(Date.now() / 1000);
 
   return {
     scheme: "exact",
@@ -39,7 +40,8 @@ export function createPaymentRequirement(params: CreateRequirementParams): Payme
     resource: params.resource,
     description: params.description,
     nonce: crypto.randomUUID(),
-    expiresAt: Math.floor(Date.now() / 1000) + ttl,
+    issuedAt: now,
+    expiresAt: now + ttl,
   };
 }
 

@@ -38,6 +38,8 @@ export interface PaymentRequirement {
   description?: string;
   /** Unique id for this payment request. */
   nonce: string;
+  /** Unix seconds when this requirement was issued. */
+  issuedAt: number;
   /** Unix seconds after which this requirement is no longer valid. */
   expiresAt: number;
 }

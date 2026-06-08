@@ -60,11 +60,25 @@ const denied = await gate.guard(request); // 402 Response, or null if paid`}</di
       <div className="codeblock">{`paymentGateway({ apiKey: "ap_live_…" });                          // hosted
 paymentGateway({ apiKey: "ap_live_…", baseUrl: "https://your-host" }); // self-hosted`}</div>
 
-      <h2>The agent side</h2>
-      <p>Agents pay automatically on 402:</p>
-      <div className="codeblock">{`import { payAndFetch } from "@agentpay/merchant-sdk/client";
+      <h2>The agent side (autonomous)</h2>
+      <p>Give an agent a funded wallet and it pays 402s by itself — extract requirement, pay USDC, retry. Drop-in fetch:</p>
+      <div className="codeblock">{`import { createPaidFetch } from "@agentpay/merchant-sdk/client";
 
-const res = await payAndFetch("https://api.you.com/api/premium", { privateKey });`}</div>
+const fetch = createPaidFetch({ privateKey: process.env.AGENT_KEY });
+await fetch("https://api.you.com/api/premium"); // 402 paid automatically`}</div>
+      <p>As an agent tool (OpenAI / LangChain / CrewAI / OpenClaw):</p>
+      <div className="codeblock">{`import { agentPaymentTool } from "@agentpay/merchant-sdk/client";
+
+const tool = agentPaymentTool({ privateKey: process.env.AGENT_KEY });
+tools: [tool.toOpenAITool()];   // then route the call to tool.invoke(args)`}</div>
+
+      <h2>Provision programmatically (coding agents)</h2>
+      <p>
+        Configure AgentPay with no GUI using an admin token (<code>AGENTPAY_ADMIN_TOKEN</code>).
+        Full runbook in <code>AGENTS.md</code>.
+      </p>
+      <div className="codeblock">{`pnpm agentpay create-project --name "My API" --amount 0.1 --pay-to 0xMerchant
+pnpm agentpay add-agent --project <id> --label research-bot --budget 10`}</div>
 
       <h2>Drop-in payment button (like Stripe)</h2>
       <p>Add a USDC pay or subscribe button to any page in one line — no framework needed.</p>

@@ -11,4 +11,5 @@ services:
       NODE_ENV: production
       SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required - see .env.example}
       AGENTPAY_PAYTO: ${AGENTPAY_PAYTO:-}
+      AGENTPAY_ADMIN_TOKEN: ${AGENTPAY_ADMIN_TOKEN:-}
     restart: unless-stopped

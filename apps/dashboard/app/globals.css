@@ -269,6 +269,17 @@ a:hover {
   color: var(--accent-2);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
+.keyrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 6px;
+}
+.btn.sm {
+  padding: 5px 10px;
+  font-size: 12px;
+}
 
 .nav {
   display: flex;

@@ -1,38 +1,34 @@
 import { createWalletClient, createPublicClient, http, erc20Abi } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia as viemBaseSepolia } from "viem/chains";
-import type { Hex, Network } from "./types";
+import type { Hex, Network, PaymentRequirement } from "./types";
 import { baseSepolia } from "./chains";
 
-export interface PayAndFetchOptions {
+export interface AgentWalletOptions {
   /** Agent wallet private key (0x-prefixed). Keep this in env, never in client code. */
   privateKey: Hex;
   network?: Network;
-  init?: RequestInit;
-  fetchImpl?: typeof fetch;
-  paymentHeader?: string;
 }
 
 /**
- * The agent-side counterpart to the gateway. Fetch a resource; if it returns
- * HTTP 402, pay the x402 requirement in USDC on-chain and retry once with proof.
- *
- *   const res = await payAndFetch("https://api.site.com/premium", { privateKey });
+ * Extract an x402 payment requirement from a 402 response body (or the raw body).
+ * Agents call this to learn what to pay. Returns null if the body isn't a valid requirement.
  */
-export async function payAndFetch(url: string, opts: PayAndFetchOptions): Promise<Response> {
+export function extractPaymentRequirement(body: unknown): PaymentRequirement | null {
+  const b = body as Record<string, unknown> & { accepts?: PaymentRequirement[] };
+  const req = (b?.accepts?.[0] ?? (b?.payTo ? (b as unknown as PaymentRequirement) : null)) as
+    | PaymentRequirement
+    | null;
+  if (!req || !req.payTo || !req.maxAmountRequired || !req.asset) return null;
+  return req;
+}
+
+/** Complete a payment for a requirement on-chain (USDC transfer). Returns the settled tx hash. */
+export async function payRequirement(
+  requirement: PaymentRequirement,
+  opts: AgentWalletOptions,
+): Promise<Hex> {
   const network = opts.network ?? baseSepolia;
-  const doFetch = opts.fetchImpl ?? fetch;
-  const header = opts.paymentHeader ?? "x-payment";
-
-  const first = await doFetch(url, opts.init);
-  if (first.status !== 402) return first;
-
-  const body = await first.json().catch(() => null);
-  const requirement = body?.accepts?.[0] ?? body;
-  if (!requirement?.payTo || !requirement?.maxAmountRequired || !requirement?.asset) {
-    throw new Error("402 response did not include a valid x402 payment requirement");
-  }
-
   const account = privateKeyToAccount(opts.privateKey);
   const wallet = createWalletClient({ account, chain: viemBaseSepolia, transport: http(network.rpcUrl) });
   const pub = createPublicClient({ chain: viemBaseSepolia, transport: http(network.rpcUrl) });
@@ -44,8 +40,98 @@ export async function payAndFetch(url: string, opts: PayAndFetchOptions): Promis
     args: [requirement.payTo as Hex, BigInt(requirement.maxAmountRequired)],
   });
   await pub.waitForTransactionReceipt({ hash });
+  return hash;
+}
 
-  const headers = new Headers(opts.init?.headers);
-  headers.set(header, hash);
-  return doFetch(url, { ...opts.init, headers });
+export interface PaidFetchOptions extends AgentWalletOptions {
+  fetchImpl?: typeof fetch;
+  paymentHeader?: string;
+}
+
+/**
+ * A drop-in `fetch` that transparently pays x402 402s and retries with proof.
+ * Hand this to any agent tool that uses fetch and payments happen autonomously.
+ *
+ *   const fetch = createPaidFetch({ privateKey });
+ *   await fetch("https://api.site.com/premium");   // 402 auto-paid
+ */
+export function createPaidFetch(opts: PaidFetchOptions): typeof fetch {
+  const doFetch = opts.fetchImpl ?? fetch;
+  const header = opts.paymentHeader ?? "x-payment";
+
+  const paid = async (input: Parameters<typeof fetch>[0], init?: RequestInit): Promise<Response> => {
+    const res = await doFetch(input, init);
+    if (res.status !== 402) return res;
+
+    const body = await res
+      .clone()
+      .json()
+      .catch(() => null);
+    const requirement = extractPaymentRequirement(body);
+    if (!requirement) return res; // unparseable 402 — hand it back untouched
+
+    const hash = await payRequirement(requirement, opts);
+    const headers = new Headers(init?.headers);
+    headers.set(header, hash);
+    return doFetch(input, { ...init, headers });
+  };
+
+  return paid as typeof fetch;
+}
+
+export interface PayAndFetchOptions extends PaidFetchOptions {
+  init?: RequestInit;
+}
+
+/** Fetch a resource, auto-paying a 402. Thin wrapper over createPaidFetch. */
+export async function payAndFetch(url: string, opts: PayAndFetchOptions): Promise<Response> {
+  return createPaidFetch(opts)(url, opts.init);
+}
+
+export interface AgentToolArgs {
+  url: string;
+  method?: string;
+  body?: string;
+}
+
+/**
+ * A framework-agnostic tool an LLM agent can call to fetch a paid resource,
+ * paying any x402 402 from the agent wallet autonomously. Wire `invoke` into
+ * LangChain / CrewAI / OpenClaw, or use `toOpenAITool()` for OpenAI tool-calling.
+ */
+export function agentPaymentTool(opts: PaidFetchOptions) {
+  const paidFetch = createPaidFetch(opts);
+  const name = "pay_and_fetch";
+  const description =
+    "Fetch a URL that may require payment. If it returns HTTP 402, automatically pay the " +
+    "x402 USDC requirement from the agent wallet and retry. Returns the response status and body.";
+  const parameters = {
+    type: "object",
+    properties: {
+      url: { type: "string", description: "The resource URL to fetch." },
+      method: { type: "string", description: "HTTP method (default GET)." },
+      body: { type: "string", description: "Optional request body for POST/PUT." },
+    },
+    required: ["url"],
+  };
+
+  async function invoke(args: AgentToolArgs): Promise<{ status: number; body: string }> {
+    const res = await paidFetch(args.url, {
+      method: args.method ?? "GET",
+      body: args.body,
+      headers: args.body ? { "content-type": "application/json" } : undefined,
+    });
+    return { status: res.status, body: await res.text() };
+  }
+
+  return {
+    name,
+    description,
+    parameters,
+    invoke,
+    /** OpenAI / OpenAI Agents SDK function-tool shape. Route the call to `invoke`. */
+    toOpenAITool() {
+      return { type: "function" as const, function: { name, description, parameters } };
+    },
+  };
 }

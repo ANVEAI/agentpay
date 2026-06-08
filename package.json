@@ -9,7 +9,8 @@
     "build": "pnpm -r build",
     "build:sdk": "pnpm --filter @agentpay/merchant-sdk build",
     "typecheck": "pnpm -r typecheck",
-    "demo": "node scripts/demo.mjs"
+    "demo": "node scripts/demo.mjs",
+    "agentpay": "node scripts/agentpay.mjs"
   },
   "devDependencies": {
     "typescript": "^5.5.0",

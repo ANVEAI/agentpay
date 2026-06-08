@@ -9,7 +9,7 @@ const DB_FILE = path.join(DATA_DIR, "cp.json");
 
 export interface Project {
   id: string;
-  owner: string; // merchant wallet (lowercased)
+  owner: string; // wallet that manages it (lowercased)
   name: string;
   payTo: string;
   amount: string; // USDC, human units
@@ -29,18 +29,29 @@ export interface PaymentEvent {
   at: string;
 }
 
+export interface Agent {
+  id: string;
+  projectId: string;
+  label: string;
+  address: string;
+  dailyLimit: string; // USDC human units, "" = unlimited
+  createdAt: string;
+}
+
 interface DB {
   projects: Project[];
   events: PaymentEvent[];
+  agents: Agent[];
 }
 
 let writeChain: Promise<unknown> = Promise.resolve();
 
 async function read(): Promise<DB> {
   try {
-    return JSON.parse(await fs.readFile(DB_FILE, "utf8")) as DB;
+    const db = JSON.parse(await fs.readFile(DB_FILE, "utf8")) as Partial<DB>;
+    return { projects: db.projects ?? [], events: db.events ?? [], agents: db.agents ?? [] };
   } catch {
-    return { projects: [], events: [] };
+    return { projects: [], events: [], agents: [] };
   }
 }
 
@@ -51,7 +62,6 @@ async function write(db: DB): Promise<void> {
   await fs.rename(tmp, DB_FILE);
 }
 
-// Serialize read-modify-write to avoid clobbering within a process.
 function mutate<T>(fn: (db: DB) => { db: DB; result: T }): Promise<T> {
   const run = writeChain.then(async () => {
     const db = await read();
@@ -97,6 +107,14 @@ export async function listProjectsByOwner(owner: string): Promise<Project[]> {
   return db.projects.filter((p) => p.owner === owner.toLowerCase());
 }
 
+export async function listAllProjects(): Promise<Project[]> {
+  return (await read()).projects;
+}
+
+export async function getProjectById(id: string): Promise<Project | null> {
+  return (await read()).projects.find((p) => p.id === id) ?? null;
+}
+
 export async function getProjectByApiKey(apiKey: string): Promise<Project | null> {
   const h = hashKey(apiKey);
   const db = await read();
@@ -118,4 +136,37 @@ export async function listEventsByOwner(owner: string): Promise<PaymentEvent[]> 
     db.projects.filter((p) => p.owner === owner.toLowerCase()).map((p) => p.id),
   );
   return db.events.filter((e) => ids.has(e.projectId)).reverse();
+}
+
+export async function createAgent(input: {
+  projectId: string;
+  label: string;
+  address: string;
+  dailyLimit: string;
+}): Promise<Agent> {
+  const agent: Agent = {
+    id: crypto.randomUUID(),
+    projectId: input.projectId,
+    label: input.label,
+    address: input.address,
+    dailyLimit: input.dailyLimit,
+    createdAt: new Date().toISOString(),
+  };
+  await mutate((db) => {
+    db.agents.push(agent);
+    return { db, result: agent };
+  });
+  return agent;
+}
+
+export async function listAgentsByProject(projectId: string): Promise<Agent[]> {
+  return (await read()).agents.filter((a) => a.projectId === projectId);
+}
+
+export async function listAgentsByOwner(owner: string): Promise<Agent[]> {
+  const db = await read();
+  const ids = new Set(
+    db.projects.filter((p) => p.owner === owner.toLowerCase()).map((p) => p.id),
+  );
+  return db.agents.filter((a) => ids.has(a.projectId));
 }

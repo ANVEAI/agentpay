@@ -91,10 +91,25 @@ That is the whole integration. Unpaid agents get an x402 `402` with the payment
 requirement; once they pay in USDC, the request goes through and the money lands
 in your wallet, where the dashboard shows it.
 
-**The agent side** is just as small:
+**The agent side** is autonomous — give it a funded wallet and it extracts the 402
+requirement, pays USDC, and retries by itself:
 ```ts
-import { payAndFetch } from "@agentpay/merchant-sdk/client";
-const res = await payAndFetch("https://api.you.com/api/premium", { privateKey });
+import { createPaidFetch } from "@agentpay/merchant-sdk/client";
+const fetch = createPaidFetch({ privateKey: process.env.AGENT_KEY });
+await fetch("https://api.you.com/api/premium"); // any 402 is paid automatically
+```
+Or as an agent tool (OpenAI / LangChain / CrewAI / OpenClaw):
+```ts
+import { agentPaymentTool } from "@agentpay/merchant-sdk/client";
+const tool = agentPaymentTool({ privateKey: process.env.AGENT_KEY });
+// OpenAI tool-calling: tools: [tool.toOpenAITool()] → route calls to tool.invoke(args)
+```
+
+**Coding agents can provision AgentPay themselves** — no GUI. Set `AGENTPAY_ADMIN_TOKEN`
+and use the CLI (full runbook in [AGENTS.md](AGENTS.md)):
+```bash
+pnpm agentpay create-project --name "My API" --amount 0.1 --pay-to 0xMerchant   # → apiKey
+pnpm agentpay add-agent --project <id> --label research-bot --budget 10          # → wallet
 ```
 
 See `examples/merchant-express.mjs` and `examples/agent-pay.mjs` for runnable demos.

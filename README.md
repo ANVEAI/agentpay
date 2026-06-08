@@ -99,6 +99,26 @@ const res = await payAndFetch("https://api.you.com/api/premium", { privateKey })
 
 See `examples/merchant-express.mjs` and `examples/agent-pay.mjs` for runnable demos.
 
+### Drop-in payment button (like Stripe / Razorpay)
+
+For a human-facing pay or subscribe button, add one line to any page — no framework,
+no build, served from your dashboard host:
+
+```html
+<script src="https://your-host/agentpay-button.js"></script>
+<agentpay-button to="0xYourWallet" amount="5"></agentpay-button>
+```
+
+Managed mode and subscriptions:
+
+```html
+<agentpay-button api-key="ap_live_…" base-url="https://your-host"></agentpay-button>
+<agentpay-button to="0xYourWallet" amount="9" mode="subscription" label="Subscribe"></agentpay-button>
+```
+
+It opens the visitor's wallet, sends USDC to your address, and fires an
+`agentpay:success` event with the tx hash. Live demo at `/button-demo.html`.
+
 ## Watch the money: the dashboard
 
 Run the dashboard (`pnpm dev`), connect the same wallet you set as `payTo`, sign in

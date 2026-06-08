@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AgentPay button demo</title>
+    <style>
+      body {
+        background: radial-gradient(1200px 600px at 70% -10%, #171a26 0%, #0a0b0f 55%);
+        color: #e8eaf0;
+        font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+        min-height: 100vh;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 40px;
+        flex-wrap: wrap;
+      }
+      .box { text-align: center; }
+      h1 { font-size: 18px; font-weight: 700; margin: 0 0 4px; }
+      p { color: #8a90a2; font-size: 13px; margin: 0 0 16px; }
+    </style>
+  </head>
+  <body>
+    <div class="box">
+      <h1>Pay once</h1>
+      <p>one-time USDC payment</p>
+      <agentpay-button to="0x2cF32e45fE9266176D0373e17bE8029E6cfcb78D" amount="5"></agentpay-button>
+    </div>
+    <div class="box">
+      <h1>Subscribe</h1>
+      <p>authorize recurring charges</p>
+      <agentpay-button
+        to="0x2cF32e45fE9266176D0373e17bE8029E6cfcb78D"
+        amount="9"
+        mode="subscription"
+        label="Subscribe · 9 USDC/mo"
+      ></agentpay-button>
+    </div>
+
+    <script src="/agentpay-button.js"></script>
+    <script>
+      document.addEventListener("agentpay:success", function (e) {
+        alert("Success! tx " + e.detail.txHash);
+      });
+    </script>
+  </body>
+</html>

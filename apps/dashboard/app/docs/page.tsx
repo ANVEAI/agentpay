@@ -66,6 +66,20 @@ paymentGateway({ apiKey: "ap_live_…", baseUrl: "https://your-host" }); // self
 
 const res = await payAndFetch("https://api.you.com/api/premium", { privateKey });`}</div>
 
+      <h2>Drop-in payment button (like Stripe)</h2>
+      <p>Add a USDC pay or subscribe button to any page in one line — no framework needed.</p>
+      <div className="codeblock">{`<script src="https://your-host/agentpay-button.js"></script>
+<agentpay-button to="0xYourWallet" amount="5"></agentpay-button>`}</div>
+      <p>Managed (API key), or a subscription button:</p>
+      <div className="codeblock">{`<agentpay-button api-key="ap_live_…" base-url="https://your-host"></agentpay-button>
+<agentpay-button to="0xYourWallet" amount="9" mode="subscription" label="Subscribe"></agentpay-button>`}</div>
+      <p>
+        It fires an <code>agentpay:success</code> event with the tx hash.{" "}
+        <a href="/button-demo.html" target="_blank" rel="noreferrer">
+          See a live demo →
+        </a>
+      </p>
+
       <footer className="foot">Base Sepolia · USDC · x402-compatible · open source</footer>
     </main>
   );

@@ -1,177 +1,164 @@
-# AgentPay
+<div align="center">
 
-**The easiest way for merchants to accept AI-agent payments.** x402-compatible, USDC, self-hosted. Connect MetaMask, get paid.
+# ◢ AgentPay
 
-AgentPay is not a new payment rail. It rides the open [x402](https://www.x402.org) standard and settles in USDC, and gives merchants the nicest possible way to accept agent payments: a drop-in SDK to require and verify payment, plus a dashboard to watch the money land.
+### The drop-in payment rail for AI agents — open source.
 
-## Quickstart: add AgentPay in 3 steps (~1 min)
+Let autonomous agents pay your API in **USDC** over the open **[x402](https://www.x402.org)** standard, with one line of code. Non-custodial: money settles straight to your wallet. AgentPay never touches it.
 
-For a merchant putting AgentPay on their site:
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6.svg)](https://www.typescriptlang.org/)
+[![x402](https://img.shields.io/badge/x402-compatible-6c7cff.svg)](https://www.x402.org)
+[![Tests](https://img.shields.io/badge/tests-48%20passing-brightgreen.svg)](#tested--hardened)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#contributing)
+[![Stars](https://img.shields.io/github/stars/ANVEAI/agentpay?style=flat&color=f5c518)](https://github.com/ANVEAI/agentpay/stargazers)
+
+[Quickstart](#quickstart-60-seconds) · [How it works](#how-it-works) · [The agent side](#the-agent-side) · [Self-host](#self-host) · [Security](SECURITY.md)
+
+</div>
+
+---
+
+AI agents are starting to buy things: APIs, data, compute, actions. **AgentPay is the easiest way to charge them.** Drop one line into your server, and an unpaid request gets an HTTP `402` with a payment requirement; the agent pays USDC and retries; the money lands in your wallet. Think Stripe, but for agents, and **you hold the keys**.
+
+It's not a new rail. It rides the open **x402** standard and settles in **USDC** on **Base**, and gives merchants the nicest possible way to accept agent payments: a drop-in SDK, a dashboard, a CLI for coding agents, and a Stripe-style button.
+
+## Quickstart (60 seconds)
 
 ```bash
-# 1. install
 npm i @agentpay/merchant-sdk
 ```
+
 ```ts
-// 2. gate a route (Express shown; Next.js and any Fetch server also supported)
-import { paymentGateway } from "@agentpay/merchant-sdk/express";
-app.use("/api/premium", paymentGateway({ payTo: "0xYourWallet", amount: 0.5 }));
-```
-```text
-3. deploy as usual. Paid agents now stream USDC to your wallet.
-```
-
-Full per-framework snippets are in [packages/merchant-sdk/README.md](packages/merchant-sdk/README.md).
-
-## Monorepo layout
-
-```
-agentpay/
-  packages/
-    merchant-sdk/   # x402-compatible TypeScript SDK: build a payment requirement, verify it on-chain
-  apps/
-    dashboard/      # Next.js merchant dashboard: MetaMask + Sign-In-With-Ethereum, payments-received table
-```
-
-## Quick start (dev)
-
-```bash
-pnpm install
-cp apps/dashboard/.env.example apps/dashboard/.env.local   # set SESSION_SECRET
-pnpm build:sdk          # compile the SDK
-pnpm dev                # dashboard on http://localhost:7000
-```
-
-Network: **Base Sepolia** testnet, **USDC** (`0x036CbD53842c5426634e7929541eC2318f3dCF7e`). No real funds while you build.
-
-## Self-host with Docker
-
-One command brings up the merchant dashboard on your own infrastructure.
-
-```bash
-cp .env.example .env          # set SESSION_SECRET and AGENTPAY_PAYTO
-docker compose up --build     # dashboard on http://localhost:3000
-```
-
-The image is a multi-stage build: it compiles the SDK, builds the dashboard as a
-standalone Next.js server, and ships only that. Config is runtime env
-(`SESSION_SECRET`, `AGENTPAY_PAYTO`), so the same image runs anywhere. Point
-`NEXT_PUBLIC_RPC_URL` at a private RPC for full payment history. Nothing leaves
-your box and no funds are ever custodied: payments settle wallet-to-wallet.
-
-## Add AgentPay to your site
-
-Gating a route behind an agent payment is one line. Pick your framework.
-
-**Express**
-```ts
+// Gate any route behind an agent payment. That's the whole integration.
 import { paymentGateway } from "@agentpay/merchant-sdk/express";
 
 app.use("/api/premium", paymentGateway({ payTo: "0xYourWallet", amount: 0.5 }));
 ```
 
-**Next.js route handler**
-```ts
-import { withPayment } from "@agentpay/merchant-sdk/next";
+Deploy as usual. Unpaid agents get a `402`; paid agents stream USDC to your wallet. Works the same on **Next.js** (`withPayment`) and **any Fetch server** — Hono, Bun, Deno (`createWebGateway`).
 
-export const GET = withPayment(
-  async () => Response.json({ data: "premium" }),
-  { payTo: "0xYourWallet", amount: 0.1 },
-);
+## How it works
+
+```mermaid
+sequenceDiagram
+    participant A as AI Agent
+    participant M as Your Server
+    participant C as Base / USDC
+    A->>M: GET /api/premium
+    M-->>A: 402 Payment Required (payTo, amount)
+    A->>C: transfer USDC to your wallet
+    C-->>A: tx hash
+    A->>M: GET /api/premium (X-PAYMENT signed proof)
+    M->>C: verify on-chain (amount, payer, confirmations)
+    M-->>A: 200 OK + content
 ```
 
-**Any Fetch server (Hono, Bun, Deno)**
-```ts
-import { createWebGateway } from "@agentpay/merchant-sdk/web";
-const gate = createWebGateway({ payTo: "0xYourWallet", amount: 0.1 });
-const denied = await gate.guard(request);   // 402 Response, or null if paid
-```
+The agent's proof is **signed by the paying wallet** and verified against the on-chain payer, so a leaked transaction hash is useless to anyone else. Each payment unlocks a resource once.
 
-That is the whole integration. Unpaid agents get an x402 `402` with the payment
-requirement; once they pay in USDC, the request goes through and the money lands
-in your wallet, where the dashboard shows it.
+## Why AgentPay
 
-**The agent side** is autonomous — give it a funded wallet and it extracts the 402
-requirement, pays USDC, and retries by itself:
+- **One-line integration.** `paymentGateway({ payTo, amount })`. No accounts, no merchant onboarding, no SDK ceremony.
+- **Non-custodial.** USDC settles wallet-to-wallet. AgentPay never holds funds or private keys. Final settlement, no chargebacks.
+- **Agent-native.** The agent side is autonomous: a drop-in `fetch` that pays any `402` and retries, plus an LLM tool for OpenAI / LangChain / CrewAI / OpenClaw.
+- **Hardened.** Signed proofs bound to payer + amount + resource, on-chain verification, reorg confirmations, durable replay protection, rate limiting, and Sign-In-With-Ethereum hardened against takeover. See [SECURITY.md](SECURITY.md).
+- **Coding-agent friendly.** A coding agent can provision projects, keys, and wallets itself via the CLI/API with an admin token — no GUI. See [AGENTS.md](AGENTS.md).
+- **Self-host in one command.** Your infra, your wallet, your keys. Or run the dashboard locally to watch the money land.
+- **Open standard.** x402-compatible and USDC, so you're not locked into us.
+
+## The agent side
+
+Give an agent a funded wallet and it pays for what it needs, on its own:
+
 ```ts
 import { createPaidFetch } from "@agentpay/merchant-sdk/client";
-const fetch = createPaidFetch({ privateKey: process.env.AGENT_KEY });
-await fetch("https://api.you.com/api/premium"); // any 402 is paid automatically
+
+const fetch = createPaidFetch({ privateKey: process.env.AGENT_KEY, dailyLimitUsdc: 10 });
+await fetch("https://api.you.com/api/premium"); // any 402 is paid + retried automatically
 ```
-Or as an agent tool (OpenAI / LangChain / CrewAI / OpenClaw):
+
+Or hand it to an LLM as a tool:
+
 ```ts
 import { agentPaymentTool } from "@agentpay/merchant-sdk/client";
+
 const tool = agentPaymentTool({ privateKey: process.env.AGENT_KEY });
 // OpenAI tool-calling: tools: [tool.toOpenAITool()] → route calls to tool.invoke(args)
 ```
 
-**Coding agents can provision AgentPay themselves** — no GUI. Set `AGENTPAY_ADMIN_TOKEN`
-and use the CLI (full runbook in [AGENTS.md](AGENTS.md)):
-```bash
-pnpm agentpay create-project --name "My API" --amount 0.1 --pay-to 0xMerchant   # → apiKey
-pnpm agentpay add-agent --project <id> --label research-bot --budget 10          # → wallet
-```
+## Drop-in button & payment links
 
-See `examples/merchant-express.mjs` and `examples/agent-pay.mjs` for runnable demos.
-
-### Drop-in payment button (like Stripe / Razorpay)
-
-For a human-facing pay or subscribe button, add one line to any page — no framework,
-no build, served from your dashboard host:
+For humans, add a USDC pay or subscribe button to any page — no framework, one line:
 
 ```html
 <script src="https://your-host/agentpay-button.js"></script>
 <agentpay-button to="0xYourWallet" amount="5"></agentpay-button>
 ```
 
-Managed mode and subscriptions:
+Or share a hosted **payment link** — every project gets a checkout page at `/pay/<projectId>`, with a **Preview** button in the dashboard.
 
-```html
-<agentpay-button api-key="ap_live_…" base-url="https://your-host"></agentpay-button>
-<agentpay-button to="0xYourWallet" amount="9" mode="subscription" label="Subscribe"></agentpay-button>
-```
+## The dashboard
 
-It opens the visitor's wallet, sends USDC to your address, and fires an
-`agentpay:success` event with the tx hash. Live demo at `/button-demo.html`.
+Run the dashboard, connect the wallet you set as `payTo`, and one click signs you in (the session persists, so you don't re-login). Every payment your gateway accepts shows up with your live USDC balance — it reads the chain directly. Create projects and API keys, register paying agents with per-agent spend caps, set HMAC-signed webhooks, and manage it all (rotate keys, edit, delete).
 
-Or share a hosted **payment link** — every project has a checkout page at
-`/pay/<projectId>` (copy it from the dashboard's Projects table).
-
-## Watch the money: the dashboard
-
-Run the dashboard (`pnpm dev`), connect the same wallet you set as `payTo`, sign in
-with Ethereum, and every payment your gateway accepts shows up in **Payments
-received** with your live USDC balance. No extra wiring: the dashboard reads the
-chain directly, so any USDC sent to your wallet appears.
-
-## Close the loop (demo)
-
-See the whole flow end to end against a running dashboard:
+## Self-host
 
 ```bash
-TARGET_URL=http://localhost:3000/api/premium pnpm demo
+cp .env.example .env          # set SESSION_SECRET (>=32 chars) and AGENTPAY_PAYTO
+docker compose up --build     # dashboard on http://localhost:3000
 ```
 
-With no `AGENT_PRIVATE_KEY` it generates a throwaway wallet and tells you how to fund
-it (Base Sepolia USDC from faucet.circle.com + a little ETH for gas). Set
-`AGENT_PRIVATE_KEY` to a funded wallet and it pays the 402, prints the tx, and retries
-to get the content — `402 → pay → 200`. The payment then shows up in the dashboard.
+A multi-stage build compiles the SDK, builds the dashboard as a standalone Next.js server, and ships only that. Config is runtime env, so the same image runs anywhere. Nothing leaves your box; no funds are ever custodied.
 
-## Deployment & the endpoint URL
+Local dev:
 
-The SDK (managed mode), CLI, and button all hit one control-plane endpoint — set
-`AGENTPAY_API_URL` (default: cloud; self-host: your dashboard URL). Two paths, both
-detailed in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md):
+```bash
+pnpm install
+cp apps/dashboard/.env.example apps/dashboard/.env.local   # set SESSION_SECRET
+pnpm build:sdk && pnpm dev    # dashboard on http://localhost:3000
+```
 
-- **Custom** — run the dashboard, create a project in the UI, wire the SDK in by hand.
-- **Agentic** — a coding agent provisions it: `agentpay init` / `agentpay prompt` + [AGENTS.md](AGENTS.md).
+Network: **Base Sepolia** testnet, **USDC** (`0x036CbD53842c5426634e7929541eC2318f3dCF7e`). No real funds while you build.
 
-## Status
+### See the whole loop
 
-The merchant side is functional: the **gateway SDK** (`createPaymentGateway` plus
-`express` / `web` / `next` adapters), the **agent payer** (`payAndFetch`), the core
-primitives (`createPaymentRequirement` + `verifyPayment`), and the **dashboard**
-(connect, sign in, see USDC received). Roadmap: the full signed x402 `X-PAYMENT`
-payload scheme, persistent payment history, multi-chain, and a hosted option.
+```bash
+AGENT_PRIVATE_KEY=0x… TARGET_URL=http://localhost:3000/api/premium pnpm demo
+```
 
-MIT licensed.
+Pays the `402`, prints the tx, retries, and gets the content: **`402 → pay → sign → 200`**. With no key it generates a throwaway wallet and tells you how to fund it (Base Sepolia USDC from [faucet.circle.com](https://faucet.circle.com) + a little ETH).
+
+## Tested & hardened
+
+**48 tests** across the merchant SDK and dashboard: payment verification (amount, recipient, USDC contract, reorg confirmations, freshness, signature binding), the full `402 → pay → sign → 200` integration loop, replay/underpayment/stolen-proof rejection, webhook HMAC integrity, input validation, and rate limiting. The codebase has been through an adversarial security review — threat model and findings in [SECURITY.md](SECURITY.md).
+
+```bash
+pnpm -r test
+```
+
+## Project layout
+
+```
+agentpay/
+  packages/merchant-sdk/   # x402 TypeScript SDK: gateway (express/next/web), agent payer (client), verify, proof
+  apps/dashboard/          # Next.js dashboard: SIWE auth, control plane, payment links, drop-in button
+  scripts/                 # agentpay CLI + the end-to-end demo
+  examples/                # runnable merchant + agent demos
+```
+
+## Roadmap
+
+- EIP-3009 `transferWithAuthorization` (merchant-submitted settlement)
+- Mainnet (Base, then more chains)
+- Persistent + multi-instance backends (Redis), hosted option
+- npm publish of `@agentpay/merchant-sdk`
+
+## Contributing
+
+Issues and PRs are welcome — this is built in the open. Good first areas: framework adapters, more agent-framework tool bindings, and the roadmap items above. Run `pnpm -r test` before opening a PR.
+
+**If AgentPay is useful to you, [⭐ star the repo](https://github.com/ANVEAI/agentpay) — it genuinely helps others find it.**
+
+## License
+
+[MIT](LICENSE). Use it, fork it, ship it.

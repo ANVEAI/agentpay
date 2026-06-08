@@ -154,6 +154,15 @@ it (Base Sepolia USDC from faucet.circle.com + a little ETH for gas). Set
 `AGENT_PRIVATE_KEY` to a funded wallet and it pays the 402, prints the tx, and retries
 to get the content — `402 → pay → 200`. The payment then shows up in the dashboard.
 
+## Deployment & the endpoint URL
+
+The SDK (managed mode), CLI, and button all hit one control-plane endpoint — set
+`AGENTPAY_API_URL` (default: cloud; self-host: your dashboard URL). Two paths, both
+detailed in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md):
+
+- **Custom** — run the dashboard, create a project in the UI, wire the SDK in by hand.
+- **Agentic** — a coding agent provisions it: `agentpay init` / `agentpay prompt` + [AGENTS.md](AGENTS.md).
+
 ## Status
 
 The merchant side is functional: the **gateway SDK** (`createPaymentGateway` plus

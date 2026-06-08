@@ -80,6 +80,25 @@ tools: [tool.toOpenAITool()];   // then route the call to tool.invoke(args)`}</d
       <div className="codeblock">{`pnpm agentpay create-project --name "My API" --amount 0.1 --pay-to 0xMerchant
 pnpm agentpay add-agent --project <id> --label research-bot --budget 10`}</div>
 
+      <h2>The endpoint URL</h2>
+      <p>
+        The SDK (managed mode), the CLI, and the button all hit one control-plane endpoint.
+        Set it once with <code>AGENTPAY_API_URL</code> (or <code>baseUrl</code> / the button&apos;s{" "}
+        <code>base-url</code>). Default is the cloud; for self-host point it at your dashboard URL.
+      </p>
+
+      <h2>Deployment: custom vs agentic</h2>
+      <p>
+        <strong>Custom</strong> — you run the dashboard (<code>docker compose up</code>), create a
+        project in the UI, and wire the SDK in by hand.
+      </p>
+      <p>
+        <strong>Agentic</strong> — a coding agent provisions everything: set{" "}
+        <code>AGENTPAY_ADMIN_TOKEN</code> + <code>AGENTPAY_API_URL</code>, then{" "}
+        <code>agentpay init</code> (interactive) or <code>agentpay prompt</code> (hand it to your AI
+        agent). Full guides: <code>docs/DEPLOYMENT.md</code> and <code>AGENTS.md</code>.
+      </p>
+
       <h2>Drop-in payment button (like Stripe)</h2>
       <p>Add a USDC pay or subscribe button to any page in one line — no framework needed.</p>
       <div className="codeblock">{`<script src="https://your-host/agentpay-button.js"></script>

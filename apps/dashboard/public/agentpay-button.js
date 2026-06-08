@@ -60,7 +60,10 @@
     async resolve() {
       var apiKey = this.getAttribute("api-key");
       if (apiKey) {
-        var baseUrl = this.getAttribute("base-url") || CLOUD;
+        var baseUrl =
+          this.getAttribute("base-url") ||
+          (typeof window !== "undefined" && window.AGENTPAY_API_URL) ||
+          CLOUD;
         var res = await fetch(baseUrl + "/api/cp/config", {
           headers: { authorization: "Bearer " + apiKey },
         });

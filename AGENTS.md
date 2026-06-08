@@ -6,13 +6,15 @@ provision paying agents programmatically — no GUI, no browser sign-in.
 
 ## 1. Configure (programmatic)
 
-Set two env vars on the control plane (the dashboard app):
+Set two env vars (on the control plane, and wherever the CLI runs):
 
 - `AGENTPAY_ADMIN_TOKEN` — a long random string; the CLI/API authenticate with it.
-- `AGENTPAY_BASE_URL` — where the control plane runs, e.g. `http://localhost:3000`.
+- `AGENTPAY_API_URL` — the control-plane endpoint, e.g. `http://localhost:3000`
+  (alias: `AGENTPAY_BASE_URL`).
 
-Then provision with the CLI (`node scripts/agentpay.mjs <cmd>` or `pnpm agentpay <cmd>`)
-or the HTTP API. The CLI flags map 1:1 to the API.
+Then provision: `pnpm agentpay init` (interactive), `pnpm agentpay prompt` (emit this
+runbook as a prompt to hand another agent), the flags below, or the HTTP API. CLI flags
+map 1:1 to the API.
 
 ### Create a merchant project + API key
 ```bash

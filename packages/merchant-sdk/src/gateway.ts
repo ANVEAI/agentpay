@@ -51,7 +51,10 @@ interface Resolved {
 }
 
 function baseUrlOf(config: GatewayConfig): string {
-  const env = typeof process !== "undefined" ? process.env?.AGENTPAY_BASE_URL : undefined;
+  const env =
+    typeof process !== "undefined"
+      ? (process.env?.AGENTPAY_API_URL ?? process.env?.AGENTPAY_BASE_URL)
+      : undefined;
   return config.baseUrl ?? env ?? DEFAULT_BASE_URL;
 }
 

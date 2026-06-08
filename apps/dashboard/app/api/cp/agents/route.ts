@@ -42,7 +42,7 @@ export async function POST(req: Request) {
   if (dlErr) return Response.json({ error: dlErr }, { status: 400 });
 
   let address = body.address ? String(body.address) : null;
-  let privateKey: string | undefined;
+  let privateKey: `0x${string}` | undefined;
   if (!address) {
     privateKey = generatePrivateKey();
     address = privateKeyToAccount(privateKey).address;

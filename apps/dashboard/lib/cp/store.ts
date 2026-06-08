@@ -167,7 +167,7 @@ export async function deleteProject(id: string): Promise<boolean> {
 export async function recordEvent(
   input: Omit<PaymentEvent, "id" | "at">,
 ): Promise<{ event: PaymentEvent; duplicate: boolean }> {
-  return mutate((db) => {
+  return mutate<{ event: PaymentEvent; duplicate: boolean }>((db) => {
     const existing = db.events.find(
       (e) => e.projectId === input.projectId && e.txHash.toLowerCase() === input.txHash.toLowerCase(),
     );

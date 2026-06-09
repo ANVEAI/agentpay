@@ -1,6 +1,7 @@
 import { Account } from "@/components/Account";
 import { Payments } from "@/components/Payments";
 import { CloudPanel } from "@/components/CloudPanel";
+import { LiveDemo } from "@/components/LiveDemo";
 
 export default function Page() {
   return (
@@ -53,6 +54,7 @@ export default function Page() {
         </ol>
       </section>
 
+      <LiveDemo />
       <Payments />
       <CloudPanel />
 

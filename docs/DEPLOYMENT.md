@@ -69,4 +69,33 @@ For a coding/AI agent (Claude Code, Cursor, OpenClaw) provisioning AgentPay auto
 
 The full machine-readable runbook for agents is [AGENTS.md](../AGENTS.md).
 
-Network: Base Sepolia (USDC) today; mainnet on the roadmap.
+---
+
+## C. Deploy the dashboard to the cloud
+
+The dashboard is a standard Next.js 15 app in `apps/dashboard` — deploy it anywhere that runs Next.
+
+**Vercel (easiest):**
+1. Import the repo. Set **Root Directory** = `apps/dashboard`, framework **Next.js** (pnpm is auto-detected).
+2. Add the env vars below.
+3. Deploy, then point your domain (e.g. `agentpay.citerlabs.com`) at it.
+
+**Cloudflare:** use the committed `Dockerfile` (standalone Next server) on Workers/Containers, or
+`@cloudflare/next-on-pages` for Pages. Same env vars.
+
+**Required env vars (set on the host):**
+
+| Var | What |
+|---|---|
+| `SESSION_SECRET` | ≥32-char random — encrypts the SIWE session (production refuses to boot without it) |
+| `AGENTPAY_PAYTO` | your merchant wallet (the demo `/api/premium` route's payee) |
+| `AGENTPAY_ADMIN_TOKEN` | admin token for CLI/agent provisioning (keep secret) |
+| `NEXT_PUBLIC_SITE_URL` | your canonical URL, e.g. `https://agentpay.citerlabs.com` (og:image + link previews) |
+| `NEXT_PUBLIC_RPC_URL` | optional — a private Base Sepolia RPC for full payment history |
+
+After deploy, verify: the landing, `/docs`, `/wallet`, `/pay/<id>`, and `/launch-video.html` load;
+`/api/premium` returns a `402`; and pasting the URL into a chat/social preview shows the og:image.
+
+---
+
+Network: Base Sepolia (USDC) today; mainnet on the roadmap. A Citerlabs project.

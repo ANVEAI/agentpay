@@ -364,6 +364,75 @@ textarea.inp {
   flex: 1;
   min-width: 0;
 }
+
+/* Live demo flow on the landing */
+.demo-flow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.demo-step {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--muted);
+  white-space: nowrap;
+  opacity: 0.4;
+  transform: translateY(4px);
+  transition: opacity 0.35s ease, transform 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease,
+    color 0.35s ease;
+}
+.demo-step.on {
+  opacity: 1;
+  transform: none;
+  color: var(--text);
+}
+.demo-step.err.on {
+  border-color: rgba(255, 107, 107, 0.5);
+  color: #ffb4b4;
+  box-shadow: 0 0 30px -10px rgba(255, 107, 107, 0.5);
+}
+.demo-step.pay.on {
+  border-color: rgba(108, 124, 255, 0.55);
+  color: #aeb8ff;
+  box-shadow: 0 0 30px -10px rgba(108, 124, 255, 0.55);
+}
+.demo-step.ok.on {
+  border-color: rgba(0, 212, 160, 0.55);
+  color: var(--accent2);
+  box-shadow: 0 0 30px -10px rgba(0, 212, 160, 0.55);
+}
+.demo-arrow {
+  color: var(--border);
+  font-size: 18px;
+  padding: 0 2px;
+  opacity: 0.4;
+  transition: color 0.35s ease, opacity 0.35s ease;
+}
+.demo-arrow.on {
+  color: var(--accent);
+  opacity: 1;
+}
+.demo-out {
+  margin-top: 14px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  color: var(--accent2);
+  background: rgba(0, 212, 160, 0.07);
+  border: 1px solid rgba(0, 212, 160, 0.25);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+@media (max-width: 600px) {
+  .demo-step {
+    font-size: 11.5px;
+    padding: 9px 10px;
+  }
+}
 .keybox {
   background: rgba(108, 124, 255, 0.08);
   border: 1px solid rgba(108, 124, 255, 0.3);

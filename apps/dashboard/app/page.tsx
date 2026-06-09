@@ -10,6 +10,7 @@ export default function Page() {
           <span className="logo">◢</span> AgentPay <span className="tag">merchant</span>
         </div>
         <div className="nav">
+          <a href="/launch-video.html" target="_blank" rel="noreferrer">Demo</a>
           <a href="/docs">Docs</a>
           <a href="/wallet">Agent wallet</a>
           <Account />
@@ -60,7 +61,10 @@ export default function Page() {
         <a href="https://www.x402.org" target="_blank" rel="noreferrer">
           x402
         </a>
-        -compatible · open source
+        -compatible · open source ·{" "}
+        <a href="https://citerlabs.com" target="_blank" rel="noreferrer">
+          A Citerlabs project
+        </a>
       </footer>
     </main>
   );

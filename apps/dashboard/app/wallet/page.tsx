@@ -55,7 +55,12 @@ export default function WalletPage() {
 
       <AgentWallet />
 
-      <footer className="foot">Base Sepolia testnet · USDC · non-custodial · open source</footer>
+      <footer className="foot">
+        Base Sepolia testnet · USDC · non-custodial · open source ·{" "}
+        <a href="https://citerlabs.com" target="_blank" rel="noreferrer">
+          A Citerlabs project
+        </a>
+      </footer>
     </main>
   );
 }

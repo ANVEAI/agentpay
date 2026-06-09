@@ -14,9 +14,34 @@ const display = Space_Grotesk({
   display: "swap",
 });
 
+const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://agentpay.citerlabs.com";
+const TITLE = "AgentPay — Accept AI-agent payments in USDC";
+const DESCRIPTION =
+  "The drop-in payment rail for AI agents. x402-compatible, USDC, non-custodial, open source. A Citerlabs project.";
+
 export const metadata: Metadata = {
-  title: "AgentPay — Merchant Dashboard",
-  description: "Accept AI-agent payments in USDC. x402-compatible, self-hosted.",
+  metadataBase: new URL(SITE),
+  title: TITLE,
+  description: DESCRIPTION,
+  applicationName: "AgentPay",
+  authors: [{ name: "Citerlabs", url: "https://citerlabs.com" }],
+  creator: "Citerlabs",
+  publisher: "Citerlabs",
+  keywords: ["AI agents", "agent payments", "x402", "USDC", "Base", "payment rail", "Citerlabs"],
+  openGraph: {
+    type: "website",
+    siteName: "AgentPay",
+    title: TITLE,
+    description: DESCRIPTION,
+    url: SITE,
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "AgentPay — the payment rail for AI agents" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: ["/og.png"],
+  },
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

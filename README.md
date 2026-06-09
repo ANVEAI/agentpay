@@ -173,3 +173,5 @@ Issues and PRs are welcome — this is built in the open. Good first areas: fram
 ## License
 
 [MIT](LICENSE). Use it, fork it, ship it.
+
+Built by **[Citerlabs](https://citerlabs.com)**.

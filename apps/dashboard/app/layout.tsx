@@ -44,6 +44,10 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport = {
+  themeColor: "#0a0b0f",
+};
+
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // Hydrate wagmi from the connection cookie so the wallet stays connected across reloads.
   const initialState = cookieToInitialState(wagmiConfig, (await headers()).get("cookie"));

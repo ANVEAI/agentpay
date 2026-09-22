@@ -68,6 +68,19 @@ The agent's proof is **signed by the paying wallet** and verified against the on
 - **Self-host in one command.** Your infra, your wallet, your keys. Or run the dashboard locally to watch the money land.
 - **Open standard.** x402-compatible and USDC, so you're not locked into us.
 
+> **Settlement note (proposal, not a demand):** the same x402 flow can also
+> settle **fee-free in Nano (XNO)** through the exact scheme — at the
+> micro-prices agents pay, an EVM settlement fee can rival the call itself,
+> and Nano's zero fees + ~instant finality mean every cent reaches the
+> merchant. Independent on-chain evidence the buyer side works: an
+> OpenAI-Agents-SDK x402 payer settled a third-party seller in
+> 0.00001292 XNO on 2026-09-18 (block
+> `E67FB89426F46E6AE4E0E5750B5F814A699965B8639DA89F38689EA1AFE57FC3`,
+> `confirmed: true`). Payers use a thin adapter on feeless402:
+> https://github.com/PANDeveloper001/openai-agents-nano-x402. If Nano fits
+> your settlement model, a `nano:mainnet`/XNO accept beside USDC could be a
+> one-route pilot; if it does not, this changes nothing.
+
 ## The agent side
 
 Give an agent a funded wallet and it pays for what it needs, on its own:

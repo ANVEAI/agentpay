@@ -174,4 +174,4 @@ Issues and PRs are welcome — this is built in the open. Good first areas: fram
 
 [MIT](LICENSE). Use it, fork it, ship it.
 
-Built by **[Citerlabs](https://citerlabs.com)**.
+Built and maintained by CiterLabs (citerlabs.com), the development and open-source firm of ANVEAI.
